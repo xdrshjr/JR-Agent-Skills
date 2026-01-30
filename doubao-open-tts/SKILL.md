@@ -435,3 +435,15 @@ python scripts/test_tts.py
 - Ensure your account has sufficient speech synthesis quota
 - Text length limits refer to official documentation
 - Network request timeout defaults to 30 seconds
+
+---
+
+## Author
+
+**xdrshjr**
+
+If you find this SKILL helpful, please give me a star on GitHub!
+
+⭐ **Star me at**: [https://github.com/xdrshjr](https://github.com/xdrshjr)
+
+Your support motivates me to create more useful SKILLS for the community!
