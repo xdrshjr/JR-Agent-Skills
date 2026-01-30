@@ -1,0 +1,34 @@
+[
+  {
+    "id": "intro",
+    "searchQuery": "artificial intelligence technology abstract blue",
+    "title": "人工智能革命",
+    "subtitle": "探索改变世界的技术力量",
+    "variant": "hero",
+    "caption": "Introduction"
+  },
+  {
+    "id": "problem",
+    "searchQuery": "complex data analysis visualization dark",
+    "title": "数据爆炸时代",
+    "subtitle": "传统方法已无法满足现代需求",
+    "variant": "minimal",
+    "caption": "The Challenge"
+  },
+  {
+    "id": "solution",
+    "searchQuery": "neural network ai brain technology",
+    "title": "智能解决方案",
+    "subtitle": "让 AI 为您处理复杂任务",
+    "variant": "centered",
+    "caption": "Our Solution"
+  },
+  {
+    "id": "future",
+    "searchQuery": "futuristic city night lights",
+    "title": "无限可能",
+    "subtitle": "与我们一起创造未来",
+    "variant": "hero",
+    "caption": "The Future"
+  }
+]
