@@ -1,3 +1,12 @@
-export {UnsplashImage} from './UnsplashImage';
-export {GradientOverlay} from './GradientOverlay';
-export {Title, Subtitle, Caption, BodyText} from './Typography';
+export { Title, Subtitle, Caption, Paragraph, BulletList, StatBlock, Quote } from './Typography';
+export { ImageCard, ImageGrid } from './ImageCard';
+export { 
+  TypewriterText, 
+  MultiLineTypewriter, 
+  StaggerContainer, 
+  HighlightText, 
+  AnimatedCounter,
+  Transition 
+} from './Animations';
+export { GradientOverlay } from './GradientOverlay';
+export { UnsplashImage } from './UnsplashImage';
