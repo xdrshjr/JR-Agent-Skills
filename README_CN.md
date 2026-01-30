@@ -13,27 +13,62 @@
 - **特点**: 支持200+种音色、多种音频格式、可调节语速和音量
 - **路径**: [`doubao-open-tts/`](./doubao-open-tts/)
 
+### 2. paper-daily
+- **功能**: 每日 AI 论文追踪工具 - 自动获取 arXiv AI 分类的最新论文
+- **特点**: 每日论文列表、摘要提取、支持导出为 Markdown/Word 格式
+- **路径**: [`paper-daily/`](./paper-daily/)
+
+### 3. remotion
+- **功能**: Remotion 最佳实践 - 使用 React 创建视频
+- **特点**: 3D内容、动画、音频处理、资源管理、时间控制、过渡效果等
+- **路径**: [`remotion/`](./remotion/)
+
+### 4. remotion-synced-video
+- **功能**: 使用 Remotion、TTS 和 Unsplash 图片创建专业级同步视频
+- **特点**: 真实图片融入、完美音视频同步、丰富内容展示、精美视觉设计
+- **路径**: [`remotion-synced-video/`](./remotion-synced-video/)
+
 ## 快速开始
 
-每个技能目录下都有独立的 README 文档和使用说明，请进入对应目录查看详细信息。
+每个技能目录下都有独立的文档和使用说明，请进入对应目录查看详细信息。
 
 ```bash
 # 查看某个技能的使用说明
 cd doubao-open-tts
-cat README.md
+cat SKILL.md
+
+cd paper-daily
+cat SKILL.md
+
+cd remotion
+cat SKILL.md
+
+cd remotion-synced-video
+cat SKILL.md
 ```
 
 ## 项目结构
 
 ```
 JR-Agent-Skills/
-├── README.md              # 英文版
-├── README_CN.md           # 本文件（中文版）
-├── doubao-open-tts/       # 豆包TTS技能
-│   ├── README.md
+├── README.md                    # 英文版
+├── README_CN.md                 # 本文件（中文版）
+├── doubao-open-tts/             # 豆包TTS技能
+│   ├── SKILL.md
 │   ├── scripts/
 │   └── ...
-└── [更多技能...]/         # 未来添加的技能
+├── paper-daily/                 # 每日AI论文追踪
+│   ├── SKILL.md
+│   ├── scripts/
+│   └── ...
+├── remotion/                    # Remotion最佳实践
+│   ├── SKILL.md
+│   ├── rules/
+│   └── ...
+└── remotion-synced-video/       # 专业视频生成
+    ├── SKILL.md
+    ├── src/
+    └── ...
 ```
 
 ## 开发者
@@ -45,7 +80,7 @@ JR-Agent-Skills/
 
 欢迎提交新的技能模块！请确保：
 1. 每个技能放在独立的目录中
-2. 包含详细的 README 文档
+2. 包含详细的 README 或 SKILL.md 文档
 3. 提供使用示例
 
 ## 许可证
