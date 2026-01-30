@@ -1,9 +1,0 @@
-{
-  "id": "remotion-synced-video",
-  "name": "Remotion Synced Video with Unsplash",
-  "version": "2.0.0",
-  "description": "Create professional videos with Remotion, TTS, and Unsplash images - featuring real imagery, perfect audio sync, and polished visual design.",
-  "author": "AI Assistant",
-  "tags": ["remotion", "video", "tts", "audio-sync", "unsplash", "images", "react", "professional"],
-  "entry": "SKILL.md"
-}
