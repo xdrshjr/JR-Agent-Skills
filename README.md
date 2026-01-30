@@ -1,52 +1,57 @@
 # JR-Agent-Skills
 
-这是一个 **AI Agent 技能集合（SKILL Collection）** 项目，为 AI Agent 提供各种实用能力的模块化封装。
+A **SKILL Collection** project for AI Agents, providing modular encapsulation of various practical capabilities.
 
-## 项目简介
+## Overview
 
-本项目旨在收集和整理各种 AI Agent 可用的技能模块，每个技能都是一个独立的功能单元，可以方便地集成到 AI Agent 系统中。
+This project aims to collect and organize skill modules available for AI Agents. Each skill is an independent functional unit that can be easily integrated into AI Agent systems.
 
-## 技能列表
+## Skills
 
 ### 1. doubao-open-tts
-- **功能**: 基于豆包（火山引擎）API 的文本转语音服务
-- **特点**: 支持200+种音色、多种音频格式、可调节语速和音量
-- **路径**: [`doubao-open-tts/`](./doubao-open-tts/)
+- **Function**: Text-to-speech service based on Doubao (Volcano Engine) API
+- **Features**: 200+ voices, multiple audio formats, adjustable speed and volume
+- **Path**: [`doubao-open-tts/`](./doubao-open-tts/)
 
-## 快速开始
+## Quick Start
 
-每个技能目录下都有独立的 README 文档和使用说明，请进入对应目录查看详细信息。
+Each skill directory has its own README and usage instructions. Navigate to the corresponding directory for detailed information.
 
 ```bash
-# 查看某个技能的使用说明
+# View a skill's documentation
 cd doubao-open-tts
 cat README.md
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 JR-Agent-Skills/
-├── README.md              # 本文件
-├── doubao-open-tts/       # 豆包TTS技能
+├── README.md              # This file
+├── README_CN.md           # Chinese version
+├── doubao-open-tts/       # Doubao TTS skill
 │   ├── README.md
 │   ├── scripts/
 │   └── ...
-└── [更多技能...]/         # 未来添加的技能
+└── [more skills...]/      # Future skills
 ```
 
-## 开发者
+## Developer
 
 **xdrshjr**
 - GitHub: [@xdrshjr](https://github.com/xdrshjr)
 
-## 贡献
+## Contributing
 
-欢迎提交新的技能模块！请确保：
-1. 每个技能放在独立的目录中
-2. 包含详细的 README 文档
-3. 提供使用示例
+New skill modules are welcome! Please ensure:
+1. Each skill is in its own directory
+2. Include detailed README documentation
+3. Provide usage examples
 
-## 许可证
+## License
 
 MIT License
+
+---
+
+**Languages**: [English](./README.md) | [中文](./README_CN.md)
