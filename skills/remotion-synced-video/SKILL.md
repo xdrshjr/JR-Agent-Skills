@@ -247,23 +247,48 @@ import { AnimatedCounter } from './components';
 
 ## TTS 语音配置
 
+### 方案一：豆包 TTS（推荐 ⭐）
+
 创建 `voice.json`：
 
 ```json
 {
   "provider": "doubao",
-  "voice": "zh_male_qianxue_mars_bigtts",
+  "voice": "zh_male_jieshuoxiaoming_moon_bigtts",
   "speed": 1.0,
   "volume": 1.0,
   "pitch": 0
 }
 ```
 
+**环境变量设置**：
+```bash
+export VOLCANO_TTS_APPID="your_app_id"
+export VOLCANO_TTS_ACCESS_TOKEN="your_access_token"
+export VOLCANO_TTS_SECRET_KEY="your_secret_key"
+```
+
+### 方案二：系统 TTS（macOS）
+
+如果暂时无法使用豆包，可用系统自带 TTS：
+```bash
+say -v "Ting-Ting" "你的文案" -o output.aiff
+# 转换为 mp3
+ffmpeg -i output.aiff output.mp3
+```
+
+> ⚠️ 系统 TTS 音质较差，建议优先使用豆包 TTS
+
 ### 推荐男声音色
 
-- `zh_male_qianxue_mars_bigtts` - 千雪，清晰自然
-- `zh_male_wennuanxian_sad_mars_bigtts` - 温暖贤，温和稳重
-- `zh_male_shaonianzhao_mars_bigtts` - 少年昭，年轻活力
+**新闻/科普类视频推荐**：
+- `zh_male_jieshuoxiaoming_moon_bigtts` - 解说小明 ⭐ **最推荐，无需权限**
+- `zh_male_xinwenxiaozhi_mars_bigtts` - 新闻小志（需开通权限）
+- `zh_male_jingdianxiaoming_mars_bigtts` - 经典小明（需开通权限）
+
+**情感类/故事类视频**：
+- `zh_male_xiaomo_mars_bigtts` - 小莫，温暖友好
+- `zh_male_xudong_conversation_wvae_bigtts` - 开心小东，阳光开朗
 
 ## 完整示例场景
 
@@ -351,6 +376,122 @@ npx remotion preview src/index.tsx
 # 6. 渲染
 npx remotion render src/index.tsx Scene-intro out/intro.mp4
 ```
+
+## 最佳实践
+
+### 🎙️ TTS 音色选择
+
+**强烈推荐使用豆包 TTS**，比系统 TTS 自然很多：
+
+```bash
+# 安装豆包 TTS skill
+cd ~/clawd/skills/doubao-open-tts
+pip install -r requirements.txt
+
+# 设置环境变量
+export VOLCANO_TTS_APPID="your_app_id"
+export VOLCANO_TTS_ACCESS_TOKEN="your_access_token"
+export VOLCANO_TTS_SECRET_KEY="your_secret_key"
+```
+
+**推荐的中文男声音色**（新闻/科普类视频）：
+
+| 音色 | Voice Type | 特点 | 备注 |
+|------|------------|------|------|
+| **解说小明** | `zh_male_jieshuoxiaoming_moon_bigtts` | 新闻播报风格，清晰专业 | ⭐ 推荐，无需额外权限 |
+| 新闻小志 | `zh_male_xinwenxiaozhi_mars_bigtts` | 标准新闻播报男声 | 需开通权限 |
+| 经典小明 | `zh_male_jingdianxiaoming_mars_bigtts` | 经典纪录片男声 | 需开通权限 |
+| 开心小东 | `zh_male_xudong_conversation_wvae_bigtts` | 阳光开朗，自然亲切 | 情感类音色 |
+
+> ⚠️ **注意**：部分音色需要在火山引擎控制台申请开通权限，建议先用解说小明测试。
+
+### 📦 视频文件大小管理
+
+**Telegram 限制 16MB**，需要压缩：
+
+```bash
+# 压缩至 16MB 以内（1080p 保持可接受画质）
+ffmpeg -i input.mp4 \
+  -vcodec h264 -acodec aac \
+  -b:v 1.5M -b:a 128k \
+  -movflags +faststart \
+  output_compressed.mp4
+
+# 如需更小文件，降低视频码率
+ffmpeg -i input.mp4 -b:v 800k -b:a 96k output.mp4
+```
+
+**码率参考**：
+- 高质量：`-b:v 3M` (~25MB/分钟)
+- 标准质量：`-b:v 1.5M` (~12MB/分钟) ⭐ 推荐
+- 低质量：`-b:v 800k` (~6MB/分钟)
+
+### 🔧 完整生成流程
+
+```bash
+# 1. 创建项目
+mkdir my-video && cd my-video
+npm init -y
+npm install @remotion/cli remotion react react-dom axios
+
+# 2. 复制 skill 文件
+cp -r ~/clawd/skills/remotion-synced-video/src .
+cp ~/clawd/skills/remotion-synced-video/scenes.json .
+
+# 3. 设置环境变量
+export UNSPLASH_ACCESS_KEY="your_key_here"
+export VOLCANO_TTS_APPID="your_app_id"
+export VOLCANO_TTS_ACCESS_TOKEN="your_token"
+export VOLCANO_TTS_SECRET_KEY="your_secret"
+
+# 4. 生成 TTS 音频（使用豆包）
+python ~/clawd/skills/doubao-open-tts/scripts/tts.py "你的文案" \
+  -v zh_male_jieshuoxiaoming_moon_bigtts \
+  -o public/audio/scene1.mp3
+
+# 5. 搜索图片
+node src/../scripts/search_images.js scenes.json public/images
+
+# 6. 预览
+npx remotion preview src/index.tsx
+
+# 7. 渲染所有场景
+npx remotion render src/index.tsx Scene-intro out/intro.mp4
+npx remotion render src/index.tsx Scene-history out/history.mp4
+# ... 渲染其他场景
+
+# 8. 拼接视频
+ffmpeg -f concat -i filelist.txt -c copy output/final.mp4
+
+# 9. 压缩（如需）
+ffmpeg -i output/final.mp4 -b:v 1.5M -b:a 128k output/final_compressed.mp4
+```
+
+### 💡 内容创作建议
+
+1. **脚本长度**：每个场景控制在 50-80 字，对应 5-10 秒音频
+2. **总时长**：短视频建议 30-60 秒，4-6 个场景
+3. **图片搜索词**：使用英文关键词，如 `"artificial intelligence technology"`、`"neural network"`
+4. **highlightKeywords**：在关键概念上使用高亮，增强记忆点
+
+### 🐛 常见问题排查
+
+**问题：TTS 生成失败**
+```
+Solution: 检查 VOLCANO_TTS_* 环境变量是否设置正确
+```
+
+**问题：音色报权限错误**
+```
+Solution: 更换为解说小明 (zh_male_jieshuoxiaoming_moon_bigtts) 或其他无需权限的音色
+```
+
+**问题：视频文件太大**
+```
+Solution: 使用 FFmpeg 压缩，降低 -b:v 码率参数
+```
+
+---
 
 ## 常见问题
 
