@@ -1,0 +1,11 @@
+{
+  "id": "github-commit-push",
+  "name": "GitHub Commit & Push",
+  "version": "1.0.0",
+  "description": "Complete git commit and push workflow for GitHub with SSH support and conflict resolution",
+  "author": "xdrshjr",
+  "tags": ["git", "github", "commit", "push", "ssh", "version-control"],
+  "homepage": "https://github.com/xdrshjr/JR-Agent-Skills/tree/main/github-commit-push",
+  "entry": "scripts/commit-and-push.sh",
+  "license": "MIT"
+}
