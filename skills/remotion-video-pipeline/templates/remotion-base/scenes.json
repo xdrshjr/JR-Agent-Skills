@@ -1,0 +1,53 @@
+[
+  {
+    "id": "intro",
+    "searchQuery": "cute puppy dog pet",
+    "title": "标题",
+    "subtitle": "副标题描述",
+    "caption": "INTRODUCTION",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom",
+      "accentColor": "#3b82f6"
+    },
+    "ttsText": "这是开场介绍，请修改为你自己的内容。"
+  },
+  {
+    "id": "content1",
+    "searchQuery": "topic background",
+    "title": "内容章节",
+    "caption": "CONTENT",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "accentColor": "#10b981"
+    },
+    "paragraphs": [
+      "第一段内容，描述主题的背景信息。",
+      "第二段内容，补充更多细节。"
+    ],
+    "bulletPoints": [
+      "要点一：关键信息",
+      "要点二：核心数据",
+      "要点三：重要结论"
+    ],
+    "highlightKeywords": ["关键词"],
+    "ttsText": "这是内容章节，请修改为你自己的内容。"
+  },
+  {
+    "id": "outro",
+    "searchQuery": "happy ending success",
+    "title": "感谢观看",
+    "subtitle": "期待下次再见",
+    "caption": "OUTRO",
+    "variant": "centered",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "fade",
+      "accentColor": "#ec4899"
+    },
+    "ttsText": "感谢观看，期待下次再见。"
+  }
+]
