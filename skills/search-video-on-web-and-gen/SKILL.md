@@ -1,6 +1,6 @@
 ---
-name: remotion-video-pipeline
-description: Automated video production pipeline - search video素材, generate TTS narration with Doubao, create professional videos with Remotion, add background music. All-in-one video content factory.
+name: search-video-on-web-and-gen
+description: Search video materials on the web and generate professional videos - automated video production pipeline with yt-dlp, Doubao TTS, Remotion rendering, and background music.
 metadata:
   tags: remotion, video, pipeline, tts, doubao, automation, content-creation, youtube, bgm
 ---

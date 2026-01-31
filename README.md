@@ -38,10 +38,10 @@ This project aims to collect and organize skill modules available for AI Agents.
 - **Features**: Automatic remote configuration, conflict handling, SSH push support, Conventional Commits
 - **Path**: [`skills/github-commit-push/`](./skills/github-commit-push/)
 
-### 7. remotion-video-pipeline
-- **Function**: Automated video production pipeline
-- **Features**: Search video materials, generate TTS narration, Remotion rendering, add background music
-- **Path**: [`skills/remotion-video-pipeline/`](./skills/remotion-video-pipeline/)
+### 7. search-video-on-web-and-gen
+- **Function**: Search video materials on the web and generate professional videos
+- **Features**: Search video materials with yt-dlp, generate TTS narration, Remotion rendering, add background music
+- **Path**: [`skills/search-video-on-web-and-gen/`](./skills/search-video-on-web-and-gen/)
 
 ## Quick Start
 
@@ -67,7 +67,7 @@ cat SKILL.md
 cd skills/github-commit-push
 cat SKILL.md
 
-cd skills/remotion-video-pipeline
+cd skills/search-video-on-web-and-gen
 cat SKILL.md
 ```
 
@@ -101,7 +101,7 @@ JR-Agent-Skills/
     ├── github-commit-push/      # Git commit & push workflow
     │   ├── SKILL.md
     │   └── scripts/
-    └── remotion-video-pipeline/ # Video production pipeline
+    └── search-video-on-web-and-gen/ # Search video and generate
         ├── SKILL.md
         └── scripts/
 ```

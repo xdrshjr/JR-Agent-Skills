@@ -38,10 +38,10 @@
 - **特点**: 自动配置远程仓库、处理合并冲突、支持 SSH 推送、遵循 Conventional Commits 规范
 - **路径**: [`skills/github-commit-push/`](./skills/github-commit-push/)
 
-### 7. remotion-video-pipeline
-- **功能**: 一站式视频生产流水线
-- **特点**: 自动搜索视频素材、生成豆包 TTS 配音、Remotion 专业渲染、添加背景音乐
-- **路径**: [`skills/remotion-video-pipeline/`](./skills/remotion-video-pipeline/)
+### 7. search-video-on-web-and-gen
+- **功能**: 网络视频搜索与生成
+- **特点**: 使用 yt-dlp 搜索网络视频素材、生成豆包 TTS 配音、Remotion 专业渲染、添加背景音乐
+- **路径**: [`skills/search-video-on-web-and-gen/`](./skills/search-video-on-web-and-gen/)
 
 ## 快速开始
 
@@ -67,7 +67,7 @@ cat SKILL.md
 cd skills/github-commit-push
 cat SKILL.md
 
-cd skills/remotion-video-pipeline
+cd skills/search-video-on-web-and-gen
 cat SKILL.md
 ```
 
@@ -101,7 +101,7 @@ JR-Agent-Skills/
     ├── github-commit-push/      # Git提交推送工作流
     │   ├── SKILL.md
     │   └── scripts/
-    └── remotion-video-pipeline/ # 视频生产流水线
+    └── search-video-on-web-and-gen/ # 网络视频搜索与生成
         ├── SKILL.md
         └── scripts/
 ```
