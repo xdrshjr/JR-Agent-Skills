@@ -1,0 +1,63 @@
+# Deliverable Review Checklist
+
+## Agent: {{AGENT_ROLE}} | Deliverable: {{DELIVERABLE_NAME}}
+
+### ✅ Completeness Check
+- [ ] All requirements from assignment addressed
+- [ ] No missing components or sections
+- [ ] Edge cases considered (if applicable)
+
+### ✅ Quality Check
+- [ ] Meets professional standards for domain
+- [ ] No obvious errors or bugs
+- [ ] Consistent style and approach
+
+### ✅ Format Check
+- [ ] Matches specified output format
+- [ ] Properly structured/organized
+- [ ] Naming conventions followed
+
+### ✅ Integration Check
+- [ ] Compatible with teammates' work
+- [ ] Interfaces/contracts respected
+- [ ] No conflicting approaches
+
+---
+
+## Review Result
+
+{{#if ACCEPTED}}
+✅ **ACCEPTED**
+
+This deliverable meets all criteria and is approved.
+{{/if}}
+
+{{#if REWORK}}
+❌ **REWORK REQUIRED**
+
+**Issues Found:**
+{{ISSUES_LIST}}
+
+**Specific Feedback:**
+{{FEEDBACK}}
+
+**Rework Count:** {{REWORK_COUNT}}/3
+
+Please address the issues and resubmit.
+{{/if}}
+
+{{#if REWORK_LIMIT}}
+⚠️ **REWORK LIMIT EXCEEDED**
+
+This deliverable has been reworked 3 times without meeting criteria.
+
+**Decision:** Escalating to user for guidance on path forward.
+
+**Summary of attempts:**
+{{ATTEMPTS_SUMMARY}}
+{{/if}}
+
+---
+
+Reviewed by: Project Manager  
+Date: {{TIMESTAMP}}
