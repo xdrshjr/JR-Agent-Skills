@@ -65,7 +65,21 @@ Team members can:
 |-------|---------------------|
 | Dispute > 2 rounds | PM intervenes and decides |
 | Rework > 3 times | Task terminated, report to user |
-| Timeout | PM escalates to user |
+| **Agent Timeout** | **PM detects → Assists stop → Analyzes cause → Restarts with guidance (max 2 restarts)** |
+
+### Timeout Recovery Process
+
+When a sub-agent times out (exceeds 30-minute time limit):
+
+1. **PM Detects Timeout** → Automatically identifies which agent timed out
+2. **Assists Agent Stop** → Sends graceful stop signal, requests partial progress summary
+3. **PM Analysis** → Determines probable cause:
+   - **First timeout**: Usually scope too large → reduce scope, focus on MVP
+   - **Second timeout**: Usually dependency/technical issue → simplify approach, work independently
+4. **Guidance & Restart** → Provides specific guidance, spawns new agent session with adjusted task
+5. **Max 2 Restarts** → After 3 attempts total, agent marked as failed, PM works with remaining agents
+
+This ensures robust task completion even when individual agents struggle.
 
 ## Project State
 

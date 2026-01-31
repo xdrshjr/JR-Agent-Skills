@@ -5,13 +5,42 @@
 
 import { sessions_spawn, sessions_send, sessions_list } from '../utils/moltbot-api';
 
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+/** 
+ * Agent timeout configuration (seconds)
+ * Extended to 30 minutes for complex tasks
+ */
+export const AGENT_TIMEOUT_SECONDS = 1800; // 30 minutes
+
+/** 
+ * Progress check interval (seconds)
+ */
+export const PROGRESS_CHECK_INTERVAL = 300; // 5 minutes
+
+/** 
+ * Maximum restart attempts for timeout recovery
+ */
+export const MAX_RESTART_ATTEMPTS = 2;
+
 interface AgentSession {
   id: string;
   role: string;
   sessionKey: string;
-  status: 'active' | 'blocked' | 'completed' | 'failed';
+  status: 'active' | 'blocked' | 'completed' | 'failed' | 'timeout' | 'restarting';
   deliverable?: string;
   reworkCount: number;
+  restartCount: number;
+  originalTask?: string;
+  timeoutHistory: TimeoutEvent[];
+}
+
+interface TimeoutEvent {
+  timestamp: Date;
+  reason: string;
+  guidance: string;
 }
 
 interface Message {
@@ -38,7 +67,7 @@ export async function spawnTeamAgents(
     const spawnResult = await sessions_spawn({
       task: systemPrompt,
       label: `${projectId}-${role.name}`,
-      runTimeoutSeconds: 900 // 15 minutes per agent
+      runTimeoutSeconds: AGENT_TIMEOUT_SECONDS // 30 minutes per agent
     });
     
     agents.push({
@@ -46,7 +75,10 @@ export async function spawnTeamAgents(
       role: role.name,
       sessionKey: spawnResult.childSessionKey,
       status: 'active',
-      reworkCount: 0
+      reworkCount: 0,
+      restartCount: 0,
+      originalTask: systemPrompt,
+      timeoutHistory: []
     });
   }
   
@@ -77,7 +109,7 @@ You are ${agentRole.name} on a 3-person project team managed by a Project Manage
 ${agentRole.responsibilities.join('\n')}
 
 **Deliverable:** ${agentRole.deliverable}  
-**Timeline:** 15 minutes
+**Timeline:** 30 minutes
 
 ## Your Teammates
 
@@ -147,7 +179,7 @@ function buildKickoffMessage(
 🚀 **PROJECT KICKOFF** 🚀
 
 **Project:** ${projectBrief.name}  
-**Timebox:** 15 minutes
+**Timebox:** 30 minutes
 
 ---
 
@@ -358,6 +390,374 @@ export async function terminateAllAgents(agents: AgentSession[]): Promise<void> 
       message: 'Project complete. Thank you for your work. Session ending.'
     });
   }
+}
+
+// ============================================================================
+// TIMEOUT MANAGEMENT - Enhanced for robustness
+// ============================================================================
+
+/**
+ * Timeout handler with PM intervention
+ * When an agent times out, the PM:
+ * 1. Detects the timeout
+ * 2. Assists the agent to stop gracefully
+ * 3. Analyzes what went wrong
+ * 4. Provides guidance
+ * 5. Restarts the agent with adjusted task if needed
+ */
+
+interface TimeoutAnalysis {
+  agentId: string;
+  role: string;
+  probableCause: 'scope_too_large' | 'dependency_blocked' | 'technical_difficulty' | 'unclear_requirements' | 'unknown';
+  recommendedAction: 'reduce_scope' | 'provide_guidance' | 'reassign_task' | 'terminate';
+  guidance: string;
+  adjustedTask?: string;
+}
+
+/**
+ * Monitor agents for timeout and handle recovery
+ * This is the main entry point for PM to manage agent timeouts
+ */
+export async function monitorAndHandleTimeouts(
+  agents: AgentSession[],
+  projectId: string
+): Promise<TimeoutReport> {
+  const report: TimeoutReport = {
+    projectId,
+    timestamp: new Date(),
+    checkedAgents: [],
+    timeoutsDetected: [],
+    restartsInitiated: [],
+    failures: []
+  };
+
+  for (const agent of agents) {
+    report.checkedAgents.push(agent.id);
+    
+    // Check if agent has timed out
+    if (await checkAgentTimeout(agent)) {
+      console.log(`[PM] ⚠️ Agent ${agent.role} has timed out`);
+      report.timeoutsDetected.push(agent.id);
+      
+      // Step 1: Assist agent to stop gracefully
+      await assistAgentStop(agent);
+      
+      // Step 2: Analyze the timeout
+      const analysis = await analyzeTimeout(agent, agents);
+      
+      // Step 3: Handle based on restart count
+      if (agent.restartCount >= MAX_RESTART_ATTEMPTS) {
+        // Too many restarts - mark as failed
+        await handleAgentFailure(agent, analysis, 'max_restarts_exceeded');
+        report.failures.push({ agentId: agent.id, reason: 'max_restarts_exceeded' });
+      } else {
+        // Attempt restart with guidance
+        const restartSuccess = await restartAgentWithGuidance(agent, analysis, projectId);
+        if (restartSuccess) {
+          report.restartsInitiated.push(agent.id);
+        } else {
+          report.failures.push({ agentId: agent.id, reason: 'restart_failed' });
+        }
+      }
+    }
+  }
+
+  return report;
+}
+
+/**
+ * Check if an agent has timed out
+ * Uses session status polling to detect timeout
+ */
+async function checkAgentTimeout(agent: AgentSession): Promise<boolean> {
+  try {
+    // Check if agent status indicates timeout
+    // In real implementation, this would query session status
+    // For now, we simulate based on agent status field
+    return agent.status === 'timeout';
+  } catch (error) {
+    console.error(`[PM] Error checking timeout for ${agent.role}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Step 1: Assist the agent to stop gracefully
+ * Send stop signal and wait for acknowledgment
+ */
+async function assistAgentStop(agent: AgentSession): Promise<void> {
+  console.log(`[PM] 🛑 Assisting ${agent.role} to stop gracefully...`);
+  
+  agent.status = 'timeout';
+  
+  // Send stop signal with acknowledgment request
+  await sessions_send({
+    sessionKey: agent.sessionKey,
+    message: `
+⏰ **TIMEOUT DETECTED - STOPPING TASK**
+
+Your task has exceeded the time limit (30 minutes). Please:
+
+1. **STOP current work immediately**
+2. **Save any partial progress** you have made
+3. **Reply with a brief summary** of:
+   - What you completed
+   - Where you got stuck
+   - What blocked you (if anything)
+
+The Project Manager will review and provide guidance shortly.
+
+**Do not continue working until you receive restart instructions.**
+`
+  });
+
+  // Record timeout event
+  agent.timeoutHistory.push({
+    timestamp: new Date(),
+    reason: 'time_limit_exceeded',
+    guidance: 'awaiting_analysis'
+  });
+}
+
+/**
+ * Step 2: Analyze why the agent timed out
+ * PM reviews agent's work and determines the cause
+ */
+async function analyzeTimeout(
+  agent: AgentSession,
+  allAgents: AgentSession[]
+): Promise<TimeoutAnalysis> {
+  console.log(`[PM] 🔍 Analyzing timeout for ${agent.role}...`);
+
+  // Default analysis
+  const analysis: TimeoutAnalysis = {
+    agentId: agent.id,
+    role: agent.role,
+    probableCause: 'unknown',
+    recommendedAction: 'provide_guidance',
+    guidance: ''
+  };
+
+  // Analyze based on restart history and context
+  if (agent.restartCount === 0) {
+    // First timeout - likely scope too large or unclear requirements
+    analysis.probableCause = 'scope_too_large';
+    analysis.recommendedAction = 'reduce_scope';
+    analysis.guidance = `
+**First Timeout Analysis:**
+
+It looks like the task scope may have been too large for the time allocated. 
+This is common on the first attempt.
+
+**Guidance for restart:**
+1. Focus on the core deliverable - skip nice-to-have features
+2. Prioritize functionality over perfection
+3. If blocked on something, document it and move on
+4. Aim for a working MVP, not a complete solution
+`;
+  } else if (agent.restartCount === 1) {
+    // Second timeout - check dependencies or technical difficulty
+    const blockedByOthers = allAgents.some(a => 
+      a.id !== agent.id && a.status === 'timeout' || a.status === 'failed'
+    );
+    
+    if (blockedByOthers) {
+      analysis.probableCause = 'dependency_blocked';
+      analysis.recommendedAction = 'provide_guidance';
+      analysis.guidance = `
+**Second Timeout Analysis:**
+
+This timeout may be related to dependencies on other team members who also experienced issues.
+
+**Guidance for restart:**
+1. Work with what you have - make reasonable assumptions
+2. Document dependencies clearly for integration later
+3. Create placeholder/stub implementations where needed
+4. Focus on what you CAN complete independently
+`;
+    } else {
+      analysis.probableCause = 'technical_difficulty';
+      analysis.recommendedAction = 'reduce_scope';
+      analysis.guidance = `
+**Second Timeout Analysis:**
+
+There may be technical challenges that are taking longer than expected.
+
+**Guidance for restart:**
+1. Simplify your approach - use straightforward solutions
+2. Avoid complex algorithms or edge cases
+3. Focus on the 80% case that delivers value
+4. Document any technical debt for future improvement
+`;
+    }
+  }
+
+  // Build adjusted task if reducing scope
+  if (analysis.recommendedAction === 'reduce_scope' && agent.originalTask) {
+    analysis.adjustedTask = buildReducedScopeTask(agent.originalTask, agent.restartCount);
+  }
+
+  return analysis;
+}
+
+/**
+ * Build a reduced-scope version of the task
+ */
+function buildReducedScopeTask(originalTask: string, restartCount: number): string {
+  let reductionGuidance = '';
+  
+  if (restartCount === 0) {
+    reductionGuidance = `
+
+⚠️ **SCOPE REDUCTION (First Restart)**
+
+Due to time constraints, please adjust your approach:
+- Deliver a working prototype instead of a complete solution
+- Focus on core functionality only
+- Skip advanced features, error handling, and optimizations
+- Prioritize getting something working over getting it perfect
+`;
+  } else {
+    reductionGuidance = `
+
+⚠️ **SCOPE REDUCTION (Second Restart - FINAL ATTEMPT)**
+
+This is your final attempt. Please MINIMIZE scope:
+- Deliver the absolute minimum viable version
+- Focus on ONE key feature only
+- Use simple, proven approaches
+- If you cannot complete even the minimum, document what you tried and why
+`;
+  }
+
+  return originalTask + reductionGuidance;
+}
+
+/**
+ * Step 3: Restart the agent with guidance
+ */
+async function restartAgentWithGuidance(
+  agent: AgentSession,
+  analysis: TimeoutAnalysis,
+  projectId: string
+): Promise<boolean> {
+  console.log(`[PM] 🔄 Restarting ${agent.role} with guidance...`);
+  
+  agent.status = 'restarting';
+  agent.restartCount++;
+
+  try {
+    // Determine task for restart
+    const restartTask = analysis.adjustedTask || agent.originalTask;
+    
+    if (!restartTask) {
+      throw new Error('No task available for restart');
+    }
+
+    // Spawn new agent session with guidance
+    const spawnResult = await sessions_spawn({
+      task: restartTask + `\n\n📋 **RESTART GUIDANCE (#${agent.restartCount}):**\n${analysis.guidance}`,
+      label: `${projectId}-${agent.role}-restart-${agent.restartCount}`,
+      runTimeoutSeconds: AGENT_TIMEOUT_SECONDS
+    });
+
+    // Update agent session
+    agent.sessionKey = spawnResult.childSessionKey;
+    agent.status = 'active';
+
+    // Record timeout event with guidance
+    const lastTimeout = agent.timeoutHistory[agent.timeoutHistory.length - 1];
+    if (lastTimeout) {
+      lastTimeout.guidance = analysis.guidance;
+    }
+
+    // Send kickoff to restarted agent
+    await sessions_send({
+      sessionKey: agent.sessionKey,
+      message: `
+🚀 **RESTART KICKOFF**
+
+You are being restarted with adjusted scope and guidance.
+
+**Previous attempts:** ${agent.restartCount - 1}
+**This is attempt:** ${agent.restartCount} of ${MAX_RESTART_ATTEMPTS + 1}
+
+${analysis.guidance}
+
+**Your task remains:** Focus on your core deliverable with the adjusted scope above.
+
+**Time limit:** 30 minutes
+
+Reply "Restart confirmed" when you're ready to begin.
+`
+    });
+
+    console.log(`[PM] ✅ ${agent.role} restarted successfully (attempt ${agent.restartCount})`);
+    return true;
+
+  } catch (error) {
+    console.error(`[PM] ❌ Failed to restart ${agent.role}:`, error);
+    agent.status = 'failed';
+    return false;
+  }
+}
+
+/**
+ * Handle agent that has exceeded max restarts or failed to restart
+ */
+async function handleAgentFailure(
+  agent: AgentSession,
+  analysis: TimeoutAnalysis,
+  reason: string
+): Promise<void> {
+  console.log(`[PM] ❌ ${agent.role} marked as failed: ${reason}`);
+  
+  agent.status = 'failed';
+
+  // Notify the agent session
+  await sessions_send({
+    sessionKey: agent.sessionKey,
+    message: `
+⚠️ **TASK TERMINATED**
+
+Your task has been terminated after ${MAX_RESTART_ATTEMPTS} restart attempts.
+
+**Reason:** ${reason === 'max_restarts_exceeded' 
+  ? 'Maximum restart attempts exceeded' 
+  : 'Failed to restart agent session'}
+
+**What this means:**
+- Your partial work (if any) will be incorporated as-is
+- The PM will work with other team members to complete the project
+- You do not need to do any further work on this task
+
+Thank you for your effort on this task.
+`
+  });
+}
+
+/**
+ * Get timeout report for project status
+ */
+export async function getTimeoutSummary(agent: AgentSession): Promise<string> {
+  if (agent.timeoutHistory.length === 0) {
+    return 'No timeouts';
+  }
+
+  return agent.timeoutHistory.map((event, idx) => 
+    `Timeout #${idx + 1}: ${event.reason} at ${event.timestamp.toISOString()}`
+  ).join('\n');
+}
+
+// Type definitions for timeout management
+interface TimeoutReport {
+  projectId: string;
+  timestamp: Date;
+  checkedAgents: string[];
+  timeoutsDetected: string[];
+  restartsInitiated: string[];
+  failures: Array<{ agentId: string; reason: string }>;
 }
 
 // Type definitions

@@ -95,9 +95,12 @@ async function executeFullAuto(
    * FULL_AUTO Execution Flow:
    * 
    * 1. Create project state file
-   * 2. Spawn 3 agents with system prompts
+   * 2. Spawn 3 agents with system prompts (30 min timeout each)
    * 3. Send kickoff message to all
-   * 4. Monitor progress (every 5 min)
+   * 4. Monitor progress (every 5 min) + TIMEOUT MONITORING
+   *    - Detect agent timeouts automatically
+   *    - On timeout: PM assists stop → analyzes → restarts with guidance
+   *    - Max 2 restarts per agent
    * 5. Detect and resolve disputes (max 2 rounds)
    * 6. Collect deliverables
    * 7. Review each deliverable (max 3 rework)
@@ -120,6 +123,8 @@ async function executeSupervised(
    * - Milestone 2: Team plan confirmation
    * - Milestone 3: Draft/prototype review
    * - Milestone 4: Final delivery acceptance
+   * 
+   * Also includes automatic timeout detection and recovery (same as FULL_AUTO)
    */
 }
 
@@ -168,6 +173,14 @@ async function monitorProgress(
    * - Blockers
    * - Disputes
    * - Collaboration needs
+   * - TIMEOUTS (with auto-recovery)
+   * 
+   * TIMEOUT HANDLING:
+   * - Each agent has 30-minute time limit
+   * - PM monitors and detects timeouts automatically
+   * - On timeout: PM assists agent to stop → analyzes cause → restarts with guidance
+   * - Max 2 restarts per agent (3 total attempts)
+   * - After max restarts: agent marked as failed, PM works with remaining agents
    */
 }
 
@@ -262,6 +275,7 @@ interface ProjectState {
   disputes: Dispute[];
   deliverables: Deliverable[];
   logs: LogEntry[];
+  timeoutEvents?: TimeoutEvent[]; // Track timeout recovery events
 }
 
 async function createProjectState(
@@ -346,6 +360,16 @@ interface FileInfo {
   name: string;
   path: string;
   content?: string;
+}
+
+// Timeout tracking
+interface TimeoutEvent {
+  agentId: string;
+  timestamp: Date;
+  attempt: number; // Which timeout occurrence (1st, 2nd, etc.)
+  reason: string;
+  guidance: string;
+  outcome: 'restarted' | 'failed';
 }
 
 // Export main function for skill integration
