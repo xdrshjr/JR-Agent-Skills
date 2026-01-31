@@ -28,6 +28,21 @@ This project aims to collect and organize skill modules available for AI Agents.
 - **Features**: Real imagery, perfect audio sync, rich content support, polished visual design
 - **Path**: [`remotion-synced-video/`](./remotion-synced-video/)
 
+### 5. google-images-crawler
+- **Function**: Crawl high-resolution original images from Google Images search
+- **Features**: Extract original (non-thumbnail) images, batch download by keyword, filter by size
+- **Path**: [`google-images-crawler/`](./google-images-crawler/)
+
+### 6. github-commit-push
+- **Function**: Complete GitHub commit and push workflow
+- **Features**: Automatic remote configuration, conflict handling, SSH push support, Conventional Commits
+- **Path**: [`skills/github-commit-push/`](./skills/github-commit-push/)
+
+### 7. remotion-video-pipeline
+- **Function**: Automated video production pipeline
+- **Features**: Search video materials, generate TTS narration, Remotion rendering, add background music
+- **Path**: [`skills/remotion-video-pipeline/`](./skills/remotion-video-pipeline/)
+
 ## Quick Start
 
 Each skill directory has its own README and usage instructions. Navigate to the corresponding directory for detailed information.
@@ -45,6 +60,15 @@ cat SKILL.md
 
 cd remotion-synced-video
 cat SKILL.md
+
+cd google-images-crawler
+cat SKILL.md
+
+cd skills/github-commit-push
+cat SKILL.md
+
+cd skills/remotion-video-pipeline
+cat SKILL.md
 ```
 
 ## Project Structure
@@ -57,6 +81,10 @@ JR-Agent-Skills/
 │   ├── SKILL.md
 │   ├── scripts/
 │   └── ...
+├── google-images-crawler/       # Google Images crawler
+│   ├── SKILL.md
+│   ├── scripts/
+│   └── ...
 ├── paper-daily/                 # Daily AI paper tracker
 │   ├── SKILL.md
 │   ├── scripts/
@@ -65,10 +93,17 @@ JR-Agent-Skills/
 │   ├── SKILL.md
 │   ├── rules/
 │   └── ...
-└── remotion-synced-video/       # Professional video creation
-    ├── SKILL.md
-    ├── src/
-    └── ...
+├── remotion-synced-video/       # Professional video creation
+│   ├── SKILL.md
+│   ├── src/
+│   └── ...
+└── skills/                      # Additional skills
+    ├── github-commit-push/      # Git commit & push workflow
+    │   ├── SKILL.md
+    │   └── scripts/
+    └── remotion-video-pipeline/ # Video production pipeline
+        ├── SKILL.md
+        └── scripts/
 ```
 
 ## Developer

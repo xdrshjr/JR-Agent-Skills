@@ -28,6 +28,21 @@
 - **特点**: 真实图片融入、完美音视频同步、丰富内容展示、精美视觉设计
 - **路径**: [`remotion-synced-video/`](./remotion-synced-video/)
 
+### 5. google-images-crawler
+- **功能**: 从 Google 图片搜索抓取高清原图
+- **特点**: 提取原始图片（非缩略图）、按关键词批量下载、支持尺寸筛选
+- **路径**: [`google-images-crawler/`](./google-images-crawler/)
+
+### 6. github-commit-push
+- **功能**: 完整的 GitHub 代码提交与推送工作流
+- **特点**: 自动配置远程仓库、处理合并冲突、支持 SSH 推送、遵循 Conventional Commits 规范
+- **路径**: [`skills/github-commit-push/`](./skills/github-commit-push/)
+
+### 7. remotion-video-pipeline
+- **功能**: 一站式视频生产流水线
+- **特点**: 自动搜索视频素材、生成豆包 TTS 配音、Remotion 专业渲染、添加背景音乐
+- **路径**: [`skills/remotion-video-pipeline/`](./skills/remotion-video-pipeline/)
+
 ## 快速开始
 
 每个技能目录下都有独立的文档和使用说明，请进入对应目录查看详细信息。
@@ -45,6 +60,15 @@ cat SKILL.md
 
 cd remotion-synced-video
 cat SKILL.md
+
+cd google-images-crawler
+cat SKILL.md
+
+cd skills/github-commit-push
+cat SKILL.md
+
+cd skills/remotion-video-pipeline
+cat SKILL.md
 ```
 
 ## 项目结构
@@ -57,6 +81,10 @@ JR-Agent-Skills/
 │   ├── SKILL.md
 │   ├── scripts/
 │   └── ...
+├── google-images-crawler/       # Google图片爬虫
+│   ├── SKILL.md
+│   ├── scripts/
+│   └── ...
 ├── paper-daily/                 # 每日AI论文追踪
 │   ├── SKILL.md
 │   ├── scripts/
@@ -65,10 +93,17 @@ JR-Agent-Skills/
 │   ├── SKILL.md
 │   ├── rules/
 │   └── ...
-└── remotion-synced-video/       # 专业视频生成
-    ├── SKILL.md
-    ├── src/
-    └── ...
+├── remotion-synced-video/       # 专业视频生成
+│   ├── SKILL.md
+│   ├── src/
+│   └── ...
+└── skills/                      # 其他技能
+    ├── github-commit-push/      # Git提交推送工作流
+    │   ├── SKILL.md
+    │   └── scripts/
+    └── remotion-video-pipeline/ # 视频生产流水线
+        ├── SKILL.md
+        └── scripts/
 ```
 
 ## 开发者
