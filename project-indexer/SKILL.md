@@ -169,7 +169,36 @@ Create two files in `.claude-index/`:
 
 **2. index.md** - Main index file (see format below)
 
-### Step 5: Inform User
+### Step 5: Update CLAUDE.md
+
+After generating the index files, update the project's `CLAUDE.md` to inform future Claude Code sessions about the index:
+
+**If `CLAUDE.md` exists:**
+1. Read the existing content
+2. Look for `## Project Index` section
+3. If found: Replace that entire section with updated content
+4. If not found: Append the section at the end of the file
+
+**If `CLAUDE.md` does not exist:**
+1. Create a new `CLAUDE.md` file with the Project Index section
+2. Inform user they can add more project-specific instructions to this file
+
+**Content to add/update:**
+```markdown
+## Project Index
+
+This project has a pre-generated index for quick codebase understanding.
+
+- **Location:** `.claude-index/index.md`
+- **Last Updated:** {YYYY-MM-DD}
+- **Contents:** Project overview, feature map, file index, exported symbols, module dependencies
+
+**Usage:** Read `.claude-index/index.md` to quickly understand the project structure before making changes. The index provides a navigation map of the codebase without needing to explore every file.
+
+**Regenerate:** Say "regenerate index" or "更新索引" to update the index after major changes.
+```
+
+### Step 6: Inform User
 
 ```
 "Project index generated successfully!
@@ -177,6 +206,7 @@ Create two files in `.claude-index/`:
 Created:
 - .claude-index/index.md (main index)
 - .claude-index/config.md (configuration)
+- Updated CLAUDE.md with index information
 
 The index includes:
 - Project overview and tech stack
@@ -184,9 +214,7 @@ The index includes:
 - [N] files indexed with [N] exported symbols
 - Module dependency graph
 
-Suggestion: You may want to:
-- Add .claude-index/ to .gitignore (keep index local)
-- Or commit it to share with team members
+Future Claude Code sessions will automatically know about this index from CLAUDE.md.
 
 I'm now ready to help with development. What would you like to work on?"
 ```
@@ -215,8 +243,9 @@ When user requests index regeneration ("regenerate index", "更新索引", "refr
    ```
 
 3. **Re-scan and regenerate**
-   - Follow Steps 2-5 from First-Time Generation
+   - Follow Steps 2-6 from First-Time Generation
    - Preserve config.md, regenerate index.md
+   - Update the timestamp in CLAUDE.md's Project Index section
 
 ---
 

@@ -30,11 +30,13 @@ Claude will ask you about:
 2. Priority directories to focus on
 3. Tech stack (auto-detected if not specified)
 
-Then it generates `.claude-index/index.md` and `.claude-index/config.md`.
+Then it generates `.claude-index/index.md`, `.claude-index/config.md`, and updates `CLAUDE.md` with index information.
 
 ### Use Existing Index
 
-In a new session, say:
+In a new session, Claude automatically sees the index information in `CLAUDE.md` and knows to read the index when you ask about the project.
+
+Say:
 - "explore the project"
 - "了解项目"
 
@@ -55,6 +57,22 @@ Claude preserves your configuration and regenerates the content.
 ├── index.md      # Main index (project map, features, files, symbols)
 └── config.md     # Configuration (exclusions, priorities, tech stack)
 ```
+
+Additionally, `CLAUDE.md` in the project root is updated with:
+
+```markdown
+## Project Index
+
+This project has a pre-generated index for quick codebase understanding.
+
+- **Location:** `.claude-index/index.md`
+- **Last Updated:** 2026-02-03
+- **Contents:** Project overview, feature map, file index, exported symbols, module dependencies
+
+**Usage:** Read `.claude-index/index.md` to quickly understand the project structure...
+```
+
+This ensures future Claude Code sessions automatically know about the index.
 
 ## Index Content
 
@@ -120,7 +138,7 @@ After generation, you can:
 ## Tips
 
 1. **Regenerate after refactoring** - Keep index in sync with major changes
-2. **Use with CLAUDE.md** - Index provides structure; CLAUDE.md provides conventions
+2. **CLAUDE.md auto-discovery** - New sessions automatically know about the index via CLAUDE.md
 3. **Customize exclusions** - Add project-specific directories to exclude
 4. **Set priorities** - Focus indexing on your most important code
 
