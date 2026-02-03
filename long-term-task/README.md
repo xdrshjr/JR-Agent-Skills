@@ -31,14 +31,17 @@ pip install -e .
 ltt create --name "学习 HF 论文" --goals "下载,分析,总结" --interval 30
 # 输出: ✅ 任务创建成功 ID: abc12345
 
-# 执行任务
+# 执行任务（分步模式：每次只执行一个步骤）
+ltt exec abc12345 --step
+
+# 执行任务（完整模式：自动执行所有步骤）
 ltt exec abc12345
 
 # 检查状态
-ltt check abc12345
+ltt check abc12345 --json
 
 # 列出所有任务
-ltt list
+ltt list --json
 ```
 
 ### Python SDK 方式（Claude Code 推荐）

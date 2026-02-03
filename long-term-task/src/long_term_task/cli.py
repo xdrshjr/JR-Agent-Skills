@@ -66,12 +66,16 @@ def main():
     # === exec 命令 ===
     exec_parser = subparsers.add_parser("exec", help="执行任务")
     exec_parser.add_argument("task_id", help="任务 ID")
+    exec_parser.add_argument("--step", action="store_true",
+                            help="分步执行模式（只执行当前步骤，不自动执行后续步骤）")
     
     # === check 命令 ===
     check_parser = subparsers.add_parser("check", help="检查任务状态")
     check_parser.add_argument("task_id", help="任务 ID")
     check_parser.add_argument("--format", choices=["json", "text"], default="text",
                              help="输出格式")
+    check_parser.add_argument("--json", action="store_true",
+                             help="以 JSON 格式输出（--format json 的别名）")
     
     # === pause 命令 ===
     pause_parser = subparsers.add_parser("pause", help="暂停任务")
@@ -222,7 +226,7 @@ def cmd_exec(args, manager: TaskManager):
         sys.exit(1)
     
     executor = Executor(task.task_dir, task.id)
-    success = executor.run()
+    success = executor.run(step_mode=args.step)
     sys.exit(0 if success else 1)
 
 
@@ -236,7 +240,9 @@ def cmd_check(args, manager: TaskManager):
     checker = Checker(task.task_dir, task.id)
     result = checker.check()
     
-    if args.format == "json":
+    # 支持 --json 作为 --format json 的别名
+    output_json = args.json or args.format == "json"
+    if output_json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
         print(f"📊 任务检查报告: {result['task_name']}")

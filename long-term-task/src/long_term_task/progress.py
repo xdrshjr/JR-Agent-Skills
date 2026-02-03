@@ -66,8 +66,15 @@ class ProgressTracker:
         # 启动定期汇报定时器
         self._schedule_next_periodic()
         
-    def stop(self, success: bool = True, error: Optional[str] = None):
-        """停止进度追踪"""
+    def stop(self, success: bool = True, error: Optional[str] = None, is_completed: Optional[bool] = None):
+        """
+        停止进度追踪
+        
+        Args:
+            success: 是否成功
+            error: 错误信息
+            is_completed: 是否所有步骤已完成（分步模式使用）
+        """
         with self._lock:
             if not self._running or self._stopped:
                 return
@@ -81,19 +88,21 @@ class ProgressTracker:
         
         # 发送结束通知
         elapsed = self._get_elapsed_seconds()
-        if success:
+        if success and (is_completed or is_completed is None):
+            # 只有真正完成所有步骤时才发送完成事件
             self._send_event("task_completed", {
                 "task_id": self.task_id,
                 "elapsed_seconds": elapsed,
                 "total_steps": self.current_step,
             })
-        else:
+        elif not success:
             self._send_event("task_failed_final", {
                 "task_id": self.task_id,
                 "elapsed_seconds": elapsed,
                 "error": error,
                 "current_step": self.current_step,
             })
+        # 分步模式未完成时不发送任何结束事件
     
     def on_step_complete(self, step_number: Optional[int] = None):
         """

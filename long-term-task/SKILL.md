@@ -26,8 +26,7 @@ import json
 
 # 创建任务
 result = subprocess.run(
-    ["ltt", "create", 
-     "--work-dir", "./.ltt",
+    ["ltt", "--work-dir", "./.ltt", "create",
      "--name", "hf-paper-learning",
      "--goals", "下载今日论文,选择Top3,提取摘要,生成笔记",
      "--interval", "30"],  # 每30分钟汇报一次
@@ -41,11 +40,15 @@ for line in result.stdout.split("\n"):
         task_id = line.replace("ID: ", "").strip()
 
 # 手动触发执行（或配置 cron）
-subprocess.run(["ltt", "exec", task_id, "--work-dir", "./.ltt"])
+# 分步执行模式：每次只执行一个步骤
+subprocess.run(["ltt", "--work-dir", "./.ltt", "exec", task_id, "--step"])
+
+# 完整执行模式：自动执行所有步骤（向后兼容）
+subprocess.run(["ltt", "--work-dir", "./.ltt", "exec", task_id])
 
 # 检查状态并读取事件
 result = subprocess.run(
-    ["ltt", "check", task_id, "--work-dir", "./.ltt", "--format", "json"],
+    ["ltt", "--work-dir", "./.ltt", "check", task_id, "--json"],
     capture_output=True, text=True
 )
 data = json.loads(result.stdout)
@@ -96,8 +99,7 @@ for event in task.get_recent_events(5):
 def create_hf_paper_task():
     # 创建任务
     result = subprocess.run([
-        "ltt", "create",
-        "--work-dir", "./.ltt",
+        "ltt", "--work-dir", "./.ltt", "create",
         "--name", "daily-hf-papers",
         "--goals", "下载论文列表,筛选Top3,下载PDF,提取摘要,生成笔记",
         "--schedule", "daily",
@@ -106,13 +108,13 @@ def create_hf_paper_task():
     
     task_id = parse_task_id(result.stdout)
     
-    # 配置执行心跳（每早9点执行）
+    # 配置执行心跳（每早9点执行）- 使用分步模式
     cron.add(
         name=f"ltt-exec-{task_id}",
         schedule={"kind": "cron", "expr": "0 9 * * *"},
         payload={
             "kind": "systemEvent",
-            "text": f"执行长期任务 #{task_id}"
+            "text": f"执行长期任务 #{task_id} --step"
         }
     )
     
@@ -122,7 +124,7 @@ def create_hf_paper_task():
         schedule={"kind": "cron", "expr": "0 10 * * *"},
         payload={
             "kind": "systemEvent",
-            "text": f"检查长期任务 #{task_id} 进度"
+            "text": f"ltt --work-dir ./.ltt check {task_id} --json"
         }
     )
     
@@ -137,7 +139,7 @@ def create_hf_paper_task():
 def on_exec_trigger(task_id):
     # 1. 先检查当前状态
     result = subprocess.run(
-        ["ltt", "check", task_id, "--format", "json"],
+        ["ltt", "--work-dir", "./.ltt", "check", task_id, "--json"],
         capture_output=True, text=True
     )
     status = json.loads(result.stdout)
@@ -152,11 +154,11 @@ def on_exec_trigger(task_id):
     
     if current_goal == "下载论文列表":
         download_papers()
-        # 标记步骤完成
-        subprocess.run(["ltt", "exec", task_id])  # 触发进度更新
+        # 标记步骤完成（分步执行模式）
+        subprocess.run(["ltt", "--work-dir", "./.ltt", "exec", task_id, "--step"])  # 执行下一步
     elif current_goal == "筛选Top3":
         select_top3()
-        subprocess.run(["ltt", "exec", task_id])
+        subprocess.run(["ltt", "--work-dir", "./.ltt", "exec", task_id, "--step"])
     # ...
 ```
 

@@ -36,9 +36,12 @@ class Executor:
             self.progress_tracker.stop(success=False, error=f"Interrupted by signal {signum}")
         sys.exit(1)
     
-    def run(self) -> bool:
+    def run(self, step_mode: bool = False) -> bool:
         """
         执行任务
+        
+        Args:
+            step_mode: 分步执行模式，只执行当前步骤，不自动执行后续步骤
         
         Returns:
             是否成功
@@ -79,6 +82,49 @@ class Executor:
             success = True
             error_msg = None
             
+            # 分步模式：只执行下一步
+            if step_mode:
+                current_state = self.state_manager.load()
+                current_step = current_state.get("current_step", 0)
+                
+                if current_step >= len(goals):
+                    print(f"[Executor] 所有步骤已完成")
+                    self.progress_tracker.stop(success=True)
+                    self._release_lock(success=True)
+                    return True
+                
+                goal = goals[current_step]
+                print(f"[Executor] 执行步骤 {current_step + 1}/{len(goals)}: {goal}")
+                
+                # 更新状态
+                self.state_manager.update(lambda s: {
+                    **s,
+                    "current_step": current_step + 1,
+                    "current_goal": goal if current_step + 1 < len(goals) else None,
+                })
+                
+                # 上报步骤完成
+                self.progress_tracker.on_step_complete(current_step + 1)
+                
+                # 执行当前步骤
+                step_result = self._execute_goal(goal, config)
+                
+                if not step_result["success"]:
+                    success = False
+                    error_msg = step_result.get("error", "Unknown error")
+                
+                # 检查是否完成
+                is_completed = success and (current_step + 1 >= len(goals))
+                
+                # 停止进度追踪
+                self.progress_tracker.stop(success=success, error=error_msg, is_completed=is_completed)
+                
+                # 释放锁
+                self._release_lock(success, error_msg, is_completed=is_completed)
+                
+                return success
+            
+            # 完整模式：执行所有步骤（向后兼容）
             for i, goal in enumerate(goals):
                 if self._interrupted:
                     success = False
@@ -90,15 +136,14 @@ class Executor:
                 # 更新状态
                 self.state_manager.update(lambda s: {
                     **s,
-                    "current_step": i + 1,  # 已完成步骤数
+                    "current_step": i + 1,
                     "current_goal": goal,
                 })
                 
                 # 上报步骤完成
-                self.progress_tracker.on_step_complete(i + 1)  # 传递已完成数量
+                self.progress_tracker.on_step_complete(i + 1)
                 
-                # 模拟执行（实际由智能体决定具体执行逻辑）
-                # 这里只更新状态，真正的执行由外部脚本/智能体完成
+                # 执行步骤
                 step_result = self._execute_goal(goal, config)
                 
                 if not step_result["success"]:
@@ -206,29 +251,41 @@ class Executor:
                     except OSError:
                         pass  # 进程不存在，可以抢占
             
+            # 只在首次启动时设置 start_time
+            start_time = state.get("start_time")
+            if not start_time:
+                start_time = time.time()
+            
             return {
                 **state,
                 "status": "running",
                 "lock_pid": current_pid,
                 "lock_time": time.time(),
+                "start_time": start_time,
             }
         
         new_state = self.state_manager.update(try_lock)
         return new_state.get("lock_pid") == current_pid
     
-    def _release_lock(self, success: bool, error: Optional[str] = None):
+    def _release_lock(self, success: bool, error: Optional[str] = None, is_completed: Optional[bool] = None):
         """释放执行锁"""
         def release(state):
             retry_count = state.get("retry_count", 0)
             if not success:
                 retry_count += 1
             
+            # 确定最终状态
+            if is_completed is not None:
+                final_status = "completed" if success and is_completed else ("failed" if not success else "idle")
+            else:
+                final_status = "completed" if success else "failed"
+            
             return {
                 **state,
-                "status": "completed" if success else "failed",
+                "status": final_status,
                 "lock_pid": None,
                 "lock_time": None,
-                "last_end": time.time(),
+                "last_end": time.time() if (is_completed or is_completed is None) else state.get("last_end"),
                 "retry_count": retry_count,
                 "last_error": error,
             }
