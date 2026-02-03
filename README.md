@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo.png" alt="JR-Agent-Skills Logo" width="200">
+</p>
+
 # JR-Agent-Skills
 
 This is an **AI Agent Skill Collection** project, providing modular encapsulation of various practical capabilities for AI Agents.

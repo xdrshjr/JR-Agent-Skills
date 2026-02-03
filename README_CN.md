@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo.png" alt="JR-Agent-Skills Logo" width="200">
+</p>
+
 # JR-Agent-Skills
 
 这是一个 **AI Agent 技能集合（SKILL Collection）** 项目，为 AI Agent 提供各种实用能力的模块化封装。
