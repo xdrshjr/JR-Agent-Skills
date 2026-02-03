@@ -1,0 +1,186 @@
+[
+  {
+    "id": "intro",
+    "searchQuery": "artificial intelligence research technology",
+    "title": "AI前沿论文速递",
+    "subtitle": "Hugging Face 每日精选 · 2026年2月1日",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom",
+      "accentColor": "#3b82f6"
+    }
+  },
+  {
+    "id": "ideastory",
+    "searchQuery": "scientific research automation AI writing",
+    "title": "Idea2Story：AI自动科研写作",
+    "caption": "PAPER 01",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "accentColor": "#8b5cf6"
+    },
+    "paragraphs": [
+      "Idea2Story 是一个自动化科研论文生成系统，能够将研究想法转化为完整的科学论文。"
+    ],
+    "bulletPoints": [
+      "自动文献综述与知识图谱构建",
+      "从想法到论文的端到端生成",
+      "基于评审反馈的迭代优化"
+    ],
+    "highlightKeywords": ["Idea2Story", "自动化", "知识图谱"]
+  },
+  {
+    "id": "spatial",
+    "searchQuery": "spatial intelligence 3d visualization",
+    "title": "空间智能基准测试",
+    "caption": "PAPER 02",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-left",
+      "imageStyle": "card",
+      "accentColor": "#ef4444"
+    },
+    "paragraphs": [
+      "研究团队推出 SpatialGenEval，专门评估文生图模型的空间理解能力。"
+    ],
+    "bulletPoints": [
+      "涵盖25个真实场景的1230个测试用例",
+      "测试物体位置、遮挡关系、因果推理",
+      "当前SOTA模型仍有显著改进空间"
+    ],
+    "highlightKeywords": ["空间智能", "文生图", "SpatialGenEval"]
+  },
+  {
+    "id": "dynamic",
+    "searchQuery": "robotics manipulation dynamic object",
+    "title": "DynamicVLA：动态物体操控",
+    "caption": "PAPER 03",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "accentColor": "#10b981"
+    },
+    "paragraphs": [
+      "针对动态场景的视觉语言动作模型，实现实时物体操控与预测。"
+    ],
+    "bulletPoints": [
+      "0.4B参数的轻量级VLA架构",
+      "连续推理与执行降低延迟",
+      "20万合成场景+2千真实场景数据"
+    ],
+    "highlightKeywords": ["DynamicVLA", "机器人", "实时操控"]
+  },
+  {
+    "id": "ocr",
+    "searchQuery": "OCR text recognition document",
+    "title": "OCRVerse：端到端OCR革新",
+    "caption": "PAPER 04",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-left",
+      "imageStyle": "card",
+      "accentColor": "#f59e0b"
+    },
+    "paragraphs": [
+      "首个支持文本中心与视觉中心统一的端到端OCR方法。"
+    ],
+    "bulletPoints": [
+      "支持报纸、杂志、书籍等文本文档",
+      "同时处理图表、网页、科学绘图",
+      "两阶段训练：SFT+RL优化策略"
+    ],
+    "highlightKeywords": ["OCRVerse", "端到端", "多模态"]
+  },
+  {
+    "id": "conceptmoe",
+    "searchQuery": "neural network efficiency machine learning",
+    "title": "ConceptMoE：智能计算分配",
+    "caption": "PAPER 05",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "accentColor": "#6366f1"
+    },
+    "paragraphs": [
+      "动态合并语义相似token，实现token级隐式计算分配。"
+    ],
+    "bulletPoints": [
+      "注意力计算减少R²倍，KV缓存减少R倍",
+      "推理加速最高达175%",
+      "长文本理解提升2.3分"
+    ],
+    "stat": {
+      "value": "175%",
+      "label": "推理加速"
+    },
+    "highlightKeywords": ["ConceptMoE", "MoE", "计算效率"]
+  },
+  {
+    "id": "planing",
+    "searchQuery": "3d reconstruction gaussian splatting",
+    "title": "PLANING：实时3D重建",
+    "caption": "PAPER 06",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-left",
+      "imageStyle": "card",
+      "accentColor": "#06b6d4"
+    },
+    "paragraphs": [
+      "基于三角-高斯混合表示的流式3D重建框架。"
+    ],
+    "bulletPoints": [
+      "几何与外观解耦建模",
+      "重建速度比2D高斯溅射快5倍",
+      "适用于具身智能大规模场景"
+    ],
+    "stat": {
+      "value": "5×",
+      "label": "速度提升"
+    },
+    "highlightKeywords": ["PLANING", "3D重建", "高斯溅射"]
+  },
+  {
+    "id": "qwen3asr",
+    "searchQuery": "speech recognition microphone audio",
+    "title": "Qwen3-ASR：多语言语音识别",
+    "caption": "PAPER 07",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "accentColor": "#ec4899"
+    },
+    "paragraphs": [
+      "阿里发布的全新语音识别模型，支持52种语言和方言。"
+    ],
+    "bulletPoints": [
+      "1.7B版本达到开源SOTA水平",
+      "0.6B版本首字延迟仅92毫秒",
+      "支持歌声识别与语音强制对齐"
+    ],
+    "stat": {
+      "value": "52",
+      "label": "支持语言",
+      "suffix": "种"
+    },
+    "highlightKeywords": ["Qwen3-ASR", "语音识别", "多语言"]
+  },
+  {
+    "id": "outro",
+    "searchQuery": "future technology innovation digital",
+    "title": "AI研究日新月异",
+    "subtitle": "关注 Hugging Face Daily Papers 获取最新进展",
+    "variant": "centered",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom",
+      "accentColor": "#3b82f6"
+    }
+  }
+]

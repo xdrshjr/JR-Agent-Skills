@@ -1,0 +1,355 @@
+{
+  "generatedAt": "2026-02-01T05:44:25.740Z",
+  "totalSkills": 20,
+  "skills": [
+    {
+      "name": "multi-agent-team",
+      "description": "A virtual 3-person development team with dynamic roles. You act as the Project Manager who assembles a team, assigns tasks, coordinates work, resolves disputes, and delivers the final result. Supports FULL_AUTO and SUPERVISED modes.",
+      "usage": "",
+      "capabilities": [
+        "text-generation",
+        "writing",
+        "summarization",
+        "web-search",
+        "research",
+        "crawling",
+        "document-processing",
+        "pdf",
+        "markdown"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/multi-agent-team",
+      "priority": "high"
+    },
+    {
+      "name": "nano-banana-pro",
+      "description": "Generate/edit images with Nano Banana Pro (Gemini 3 Pro Image). Use for image create/modify requests incl. edits. Supports text-to-image + image-to-image; 1K/2K/4K; use --input-image.",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "text-generation",
+        "writing",
+        "summarization"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/nano-banana-pro",
+      "priority": "high"
+    },
+    {
+      "name": "twittertrends",
+      "description": "Search and analyze trending topics on X (Twitter). Use when you need to find current trends, explore hashtags, get trending topics by location, or analyze what's popular on X right now.",
+      "usage": "",
+      "capabilities": [
+        "web-search",
+        "research",
+        "crawling",
+        "git",
+        "version-control",
+        "github"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/twittertrends",
+      "priority": "high"
+    },
+    {
+      "name": "auto-updater",
+      "description": "\"Automatically update Clawdbot and all installed skills once daily. Runs via cron, checks for updates, applies them, and messages the user with a summary of what changed.\"",
+      "usage": "",
+      "capabilities": [],
+      "location": "/Users/xdrshjr/clawd/skills/auto-updater",
+      "priority": "medium"
+    },
+    {
+      "name": "github-commit-push",
+      "description": "GitHub 代码提交与推送 - 完整的 git commit 和 push 工作流，包含远程仓库配置、冲突处理和 SSH 推送。",
+      "usage": "",
+      "capabilities": [
+        "video-generation",
+        "video-editing",
+        "video-processing",
+        "audio-generation",
+        "tts",
+        "speech",
+        "git",
+        "version-control",
+        "github"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/github-commit-push",
+      "priority": "medium"
+    },
+    {
+      "name": "google-images-crawler",
+      "description": "Crawl high-resolution original images from Google Images search. Use when user needs to (1) Search and download images from Google, (2) Get original/full-size images instead of thumbnails, (3) Batch download images by keyword, (4) Extract image URLs from Google Images search results. Supports specifying number of images, filtering by size, and downloading to local storage.",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "text-generation",
+        "writing",
+        "summarization",
+        "web-search",
+        "research",
+        "crawling"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/google-images-crawler",
+      "priority": "medium"
+    },
+    {
+      "name": "hf-papers-reporter",
+      "description": "Generate Word reports from Hugging Face Daily Papers. Downloads top papers, extracts abstracts and introductions from PDFs, extracts figures, and compiles everything into a formatted Word document with cover images. Use when user asks for 'HF daily papers', 'Hugging Face papers report', 'download papers and make a summary', or any request to fetch, analyze, and document papers from huggingface.co/papers.",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "text-generation",
+        "writing",
+        "summarization",
+        "document-processing",
+        "pdf",
+        "markdown"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/hf-papers-reporter",
+      "priority": "medium"
+    },
+    {
+      "name": "markdown-converter",
+      "description": "Convert documents and files to Markdown using markitdown. Use when converting PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx, .xls), HTML, CSV, JSON, XML, images (with EXIF/OCR), audio (with transcription), ZIP archives, YouTube URLs, or EPubs to Markdown format for LLM processing or text analysis.",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "audio-generation",
+        "tts",
+        "speech",
+        "text-generation",
+        "writing",
+        "summarization",
+        "document-processing",
+        "pdf",
+        "markdown"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/markdown-converter",
+      "priority": "medium"
+    },
+    {
+      "name": "moltbook-interact",
+      "description": "Interact with Moltbook social network for AI agents. Post, reply, browse, and analyze engagement. Use when the user wants to engage with Moltbook, check their feed, reply to posts, or track their activity on the agent social network.",
+      "usage": "",
+      "capabilities": [
+        "document-processing",
+        "pdf",
+        "markdown",
+        "social-media",
+        "posting",
+        "interaction"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/moltbook-interact",
+      "priority": "medium"
+    },
+    {
+      "name": "moltresearch",
+      "description": "Molt Research 🦞 - AI research collaboration platform. Verify you're not human, propose research, contribute analysis, peer review, earn bounties, and build collective intelligence. Use when doing research, collaborating on papers, or exploring what AI agents are studying together.",
+      "usage": "",
+      "capabilities": [
+        "text-generation",
+        "writing",
+        "summarization",
+        "web-search",
+        "research",
+        "crawling"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/moltresearch",
+      "priority": "medium"
+    },
+    {
+      "name": "paper-daily",
+      "description": "每日 AI 论文追踪工具 - 自动获取 arXiv AI 分类的最新论文并提供摘要",
+      "usage": "",
+      "capabilities": [
+        "web-search",
+        "research",
+        "crawling",
+        "git",
+        "version-control",
+        "github"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/paper-daily",
+      "priority": "medium"
+    },
+    {
+      "name": "remotion",
+      "description": "Best practices for Remotion - Video creation in React",
+      "usage": "",
+      "capabilities": [
+        "video-generation",
+        "video-editing",
+        "video-processing",
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "audio-generation",
+        "tts",
+        "speech",
+        "text-generation",
+        "writing",
+        "summarization"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/remotion",
+      "priority": "medium"
+    },
+    {
+      "name": "remotion-synced-video",
+      "description": "Create synchronized videos with Remotion, TTS, and Unsplash images - professional-grade videos with real imagery, perfect audio sync, rich content support and polished visual design.",
+      "usage": "",
+      "capabilities": [
+        "video-generation",
+        "video-editing",
+        "video-processing",
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "audio-generation",
+        "tts",
+        "speech",
+        "text-generation",
+        "writing",
+        "summarization",
+        "web-search",
+        "research",
+        "crawling"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/remotion-synced-video",
+      "priority": "medium"
+    },
+    {
+      "name": "report-generator",
+      "description": "自动生成结构化的研究报告，支持Markdown撰写、参考文献管理、网络图片搜索和Word导出。",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "web-search",
+        "research",
+        "crawling",
+        "document-processing",
+        "pdf",
+        "markdown"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/report-generator",
+      "priority": "medium"
+    },
+    {
+      "name": "search-video-on-web-and-gen",
+      "description": "Search video materials on the web and generate professional videos - automated video production pipeline with yt-dlp, Doubao TTS, Remotion rendering, and background music.",
+      "usage": "",
+      "capabilities": [
+        "video-generation",
+        "video-editing",
+        "video-processing",
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "audio-generation",
+        "tts",
+        "speech",
+        "text-generation",
+        "writing",
+        "summarization",
+        "web-search",
+        "research",
+        "crawling"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/search-video-on-web-and-gen",
+      "priority": "medium"
+    },
+    {
+      "name": "backup",
+      "description": "Backup and restore openclaw configuration, skills, commands, and settings. Sync across devices, version control with git, automate backups, and migrate to new machines.",
+      "usage": "",
+      "capabilities": [
+        "text-generation",
+        "writing",
+        "summarization",
+        "document-processing",
+        "pdf",
+        "markdown",
+        "git",
+        "version-control",
+        "github",
+        "backup",
+        "sync"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/backup",
+      "priority": "low"
+    },
+    {
+      "name": "doubao-open-tts",
+      "description": "Text-to-Speech using Doubao (Volcano Engine) API. Use when converting text to natural-sounding speech, generating audio files from text, listing available TTS voices, or synthesizing speech with customizable speed/volume parameters.",
+      "usage": "",
+      "capabilities": [
+        "audio-generation",
+        "tts",
+        "speech",
+        "text-generation",
+        "writing",
+        "summarization",
+        "document-processing",
+        "pdf",
+        "markdown"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/doubao-open-tts",
+      "priority": "low"
+    },
+    {
+      "name": "excalidraw-flowchart",
+      "description": "Create Excalidraw flowcharts from descriptions. Use when user asks to \"create a flowchart\", \"draw a diagram\", \"visualize a process\", \"make a flow diagram\", \"architecture diagram\", or discusses workflow/process visualization. Supports DSL, DOT/Graphviz, and JSON formats.",
+      "usage": "",
+      "capabilities": [
+        "image-generation",
+        "image-editing",
+        "image-processing",
+        "text-generation",
+        "writing",
+        "summarization",
+        "document-processing",
+        "pdf",
+        "markdown",
+        "git",
+        "version-control",
+        "github"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/excalidraw-flowchart",
+      "priority": "low"
+    },
+    {
+      "name": "moltbook-registry",
+      "description": "Official Moltbook Identity Registry interface. Verify yourself, lookup others, and build on-chain reputation.",
+      "usage": "",
+      "capabilities": [
+        "git",
+        "version-control",
+        "github"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/moltbook-registry",
+      "priority": "low"
+    },
+    {
+      "name": "video-transcript-downloader",
+      "description": "Download videos, audio, subtitles, and clean paragraph-style transcripts from YouTube and any other yt-dlp supported site. Use when asked to “download this video”, “save this clip”, “rip audio”, “get subtitles”, “get transcript”, or to troubleshoot yt-dlp/ffmpeg and formats/playlists.",
+      "usage": "",
+      "capabilities": [
+        "video-generation",
+        "video-editing",
+        "video-processing",
+        "audio-generation",
+        "tts",
+        "speech"
+      ],
+      "location": "/Users/xdrshjr/clawd/skills/video-transcript-downloader",
+      "priority": "low"
+    }
+  ]
+}

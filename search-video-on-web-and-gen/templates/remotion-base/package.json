@@ -1,0 +1,22 @@
+{
+  "name": "remotion-video-project",
+  "version": "1.0.0",
+  "description": "Remotion Video Pipeline Project",
+  "scripts": {
+    "start": "remotion preview src/index.tsx",
+    "build": "remotion render src/index.tsx",
+    "render": "./scripts/render_all.sh"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "remotion": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

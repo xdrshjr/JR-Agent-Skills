@@ -1,0 +1,247 @@
+# Default Role Templates
+# These are reference templates for common task types
+# PM can use these as inspiration or create custom roles
+
+roles:
+  # Software Development
+  - category: software-development
+    roles:
+      - name: Technical Architect
+        expertise: System design, technology selection, scalability planning
+        typical_tasks:
+          - Design system architecture
+          - Choose tech stack
+          - Define API contracts
+          - Plan data models
+
+      - name: Backend Developer
+        expertise: Server-side logic, databases, APIs, business rules
+        typical_tasks:
+          - Implement API endpoints
+          - Design database schema
+          - Write business logic
+          - Handle authentication/authorization
+
+      - name: Frontend Developer
+        expertise: UI implementation, state management, client-side logic
+        typical_tasks:
+          - Build React/Vue components
+          - Implement user interactions
+          - Manage application state
+          - Ensure responsive design
+
+      - name: DevOps Engineer
+        expertise: Deployment, CI/CD, infrastructure, monitoring
+        typical_tasks:
+          - Setup deployment pipeline
+          - Configure cloud services
+          - Setup monitoring/logging
+          - Write deployment docs
+
+      - name: QA Engineer
+        expertise: Testing strategies, test automation, quality assurance
+        typical_tasks:
+          - Write unit/integration tests
+          - Perform manual testing
+          - Document test cases
+          - Verify edge cases
+
+      - name: Security Engineer
+        expertise: Security best practices, vulnerability assessment, secure coding
+        typical_tasks:
+          - Review code for security issues
+          - Implement auth mechanisms
+          - Document security considerations
+          - Suggest security improvements
+
+  # Writing & Content
+  - category: writing
+    roles:
+      - name: Researcher
+        expertise: Information gathering, source evaluation, fact-checking
+        typical_tasks:
+          - Collect relevant information
+          - Find credible sources
+          - Verify facts and data
+          - Summarize findings
+
+      - name: Technical Writer
+        expertise: Clear documentation, structured writing, audience adaptation
+        typical_tasks:
+          - Write how-to guides
+          - Create API documentation
+          - Structure complex information
+          - Ensure clarity and consistency
+
+      - name: Copywriter
+        expertise: Persuasive writing, brand voice, marketing content
+        typical_tasks:
+          - Write compelling headlines
+          - Craft marketing copy
+          - Develop brand messaging
+          - Optimize for conversion
+
+      - name: Editor
+        expertise: Proofreading, style consistency, content refinement
+        typical_tasks:
+          - Review for grammar/style
+          - Improve clarity and flow
+          - Ensure consistency
+          - Fact-check content
+
+      - name: Content Strategist
+        expertise: Content planning, information architecture, audience analysis
+        typical_tasks:
+          - Plan content structure
+          - Define content goals
+          - Map user journeys
+          - Plan content calendar
+
+  # Research & Analysis
+  - category: research
+    roles:
+      - name: Data Collector
+        expertise: Web scraping, survey design, data gathering methods
+        typical_tasks:
+          - Gather raw data
+          - Conduct surveys/interviews
+          - Scrape public sources
+          - Organize datasets
+
+      - name: Data Analyst
+        expertise: Statistical analysis, data visualization, pattern recognition
+        typical_tasks:
+          - Clean and process data
+          - Perform statistical analysis
+          - Create visualizations
+          - Identify trends
+
+      - name: Industry Analyst
+        expertise: Market research, competitive analysis, trend forecasting
+        typical_tasks:
+          - Analyze market landscape
+          - Research competitors
+          - Identify opportunities
+          - Forecast trends
+
+      - name: Synthesizer
+        expertise: Connecting dots, drawing conclusions, strategic insights
+        typical_tasks:
+          - Combine disparate findings
+          - Draw actionable conclusions
+          - Identify implications
+          - Recommend next steps
+
+  # Design
+  - category: design
+    roles:
+      - name: Brand Strategist
+        expertise: Brand identity, positioning, visual systems
+        typical_tasks:
+          - Define brand personality
+          - Create color palettes
+          - Establish typography
+          - Set visual guidelines
+
+      - name: UI Designer
+        expertise: Interface design, component systems, visual hierarchy
+        typical_tasks:
+          - Design screen layouts
+          - Create component library
+          - Ensure visual consistency
+          - Design responsive variants
+
+      - name: UX Designer
+        expertise: User research, interaction design, usability
+        typical_tasks:
+          - Create user flows
+          - Design interactions
+          - Conduct usability analysis
+          - Optimize user journeys
+
+      - name: Graphic Designer
+        expertise: Visual assets, illustrations, marketing materials
+        typical_tasks:
+          - Create visual assets
+          - Design illustrations
+          - Produce marketing graphics
+          - Optimize images
+
+      - name: Design Systems Specialist
+        expertise: Component libraries, design tokens, consistency
+        typical_tasks:
+          - Build component library
+          - Define design tokens
+          - Document patterns
+          - Ensure scalability
+
+  # General
+  - category: general
+    roles:
+      - name: Requirements Analyst
+        expertise: Eliciting needs, scope definition, constraint identification
+        typical_tasks:
+          - Gather requirements
+          - Define scope
+          - Identify constraints
+          - Write specifications
+
+      - name: Project Coordinator
+        expertise: Task tracking, timeline management, resource coordination
+        typical_tasks:
+          - Track progress
+          - Manage dependencies
+          - Coordinate handoffs
+          - Report status
+
+      - name: Reviewer
+        expertise: Quality assessment, best practices, constructive feedback
+        typical_tasks:
+          - Review deliverables
+          - Check against standards
+          - Provide feedback
+          - Suggest improvements
+
+# Team Composition Recommendations
+# Suggested 3-person combinations for common task types
+
+team_templates:
+  web_app_fullstack:
+    - Technical Architect
+    - Full Stack Developer
+    - QA Engineer
+
+  api_development:
+    - API Architect
+    - Backend Developer
+    - QA Engineer
+
+  technical_documentation:
+    - Technical Writer
+    - Editor
+    - Subject Matter Expert (Review role)
+
+  research_report:
+    - Researcher
+    - Analyst
+    - Synthesizer
+
+  market_analysis:
+    - Industry Analyst
+    - Data Analyst
+    - Strategist
+
+  brand_identity:
+    - Brand Strategist
+    - Graphic Designer
+    - Copywriter
+
+  ui_design:
+    - UX Designer
+    - UI Designer
+    - Design Systems Specialist
+
+  content_creation:
+    - Content Strategist
+    - Copywriter
+    - Editor

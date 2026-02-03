@@ -1,0 +1,43 @@
+[
+  {
+    "id": "intro",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom"
+    },
+    "title": "🔬 今日 AI 论文",
+    "subtitle": "2026年2月1日",
+    "duration": 180
+  },
+  {
+    "id": "content",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#f59e0b"
+    },
+    "title": "RedSage 网络安全大模型",
+    "paragraphs": ["一款专注网络安全的本地部署开源大模型"],
+    "bulletPoints": [
+      "118亿token安全数据训练",
+      "26万份专业安全文档",
+      "本地部署保护数据隐私",
+      "企业安全团队的理想AI助手"
+    ],
+    "duration": 540
+  },
+  {
+    "id": "outro",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom"
+    },
+    "title": "关注我",
+    "subtitle": "每天一分钟，了解最新AI进展！",
+    "duration": 210
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "name": "hf-papers-to-video",
+  "version": "1.0.0",
+  "description": "Transform Hugging Face Daily Papers into professional video summaries",
+  "scripts": {
+    "extract": "python3 scripts/extract_papers.py",
+    "filter": "python3 scripts/filter_images.py",
+    "tts": "python3 scripts/generate_tts.py",
+    "render": "bash scripts/render.sh",
+    "preview": "npx remotion preview src/index.tsx",
+    "studio": "npx remotion studio src/index.tsx",
+    "full": "npm run extract && npm run filter && npm run tts && npm run render"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "remotion": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

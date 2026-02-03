@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Excalidraw Export</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.0/dist/excalidraw.production.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: white; 
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    #root { 
+      width: 100vw; 
+      height: 100vh; 
+    }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-size: 18px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">Loading...</div>
+  </div>
+  
+  <script>
+    const Excalidraw = window.ExcalidrawLib.Excalidraw;
+    const MainMenu = window.ExcalidrawLib.MainMenu;
+    
+    let sceneData = null;
+    
+    // Load scene data
+    fetch('ai-development.excalidraw')
+      .then(r => r.json())
+      .then(data => {
+        sceneData = data;
+        renderApp();
+      })
+      .catch(err => {
+        document.getElementById('root').innerHTML = '<div class="loading">Error: ' + err.message + '</div>';
+      });
+    
+    function renderApp() {
+      const App = () => {
+        const [excalidrawAPI, setExcalidrawAPI] = React.useState(null);
+        
+        React.useEffect(() => {
+          if (excalidrawAPI && sceneData) {
+            excalidrawAPI.updateScene({
+              elements: sceneData.elements,
+              appState: { ...sceneData.appState, zoom: 0.8 }
+            });
+            // Signal that we're ready
+            setTimeout(() => {
+              document.body.setAttribute('data-ready', 'true');
+            }, 2000);
+          }
+        }, [excalidrawAPI]);
+        
+        return React.createElement(React.Fragment, null,
+          React.createElement(Excalidraw, {
+            excalidrawAPI: setExcalidrawAPI,
+            initialData: {
+              elements: [],
+              appState: { 
+                viewBackgroundColor: '#ffffff',
+                zoom: 0.8
+              }
+            },
+            UIOptions: { 
+              canvasActions: { export: false, saveToActiveFile: false },
+              tools: { image: false }
+            },
+            gridModeEnabled: false,
+            theme: 'light'
+          })
+        );
+      };
+      
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(App));
+    }
+  </script>
+</body>
+</html>

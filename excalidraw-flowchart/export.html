@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Excalidraw Export</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: white; }
+    #export-container {
+      position: relative;
+      width: fit-content;
+      height: fit-content;
+      padding: 40px;
+      background: white;
+    }
+    #canvas-container {
+      position: relative;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="export-container">
+    <div id="canvas-container"></div>
+  </div>
+  
+  <script type="module">
+    import { exportToSvg, getSceneBounds } from 'https://unpkg.com/@excalidraw/utils@0.1.0/dist/utils.esm.js';
+    
+    async function render() {
+      const response = await fetch('ai-development.excalidraw');
+      const data = await response.json();
+      
+      const svg = await exportToSvg({
+        elements: data.elements,
+        appState: data.appState,
+        files: data.files,
+        exportPadding: 20
+      });
+      
+      document.getElementById('canvas-container').appendChild(svg);
+      
+      // Signal that we're done
+      window.exportReady = true;
+    }
+    
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+# Dispute Resolution Template
+
+⚠️ **DISPUTE DETECTED** ⚠️
+
+**Between:** {{AGENT_A_ROLE}} and {{AGENT_B_ROLE}}  
+**Topic:** {{DISPUTE_TOPIC}}  
+**Round:** {{CURRENT_ROUND}}/2
+
+---
+
+## Current Positions
+
+### {{AGENT_A_ROLE}} argues:
+{{AGENT_A_POSITION}}
+
+### {{AGENT_B_ROLE}} argues:
+{{AGENT_B_POSITION}}
+
+---
+
+## PM Decision
+
+{{#if FINAL_ROUND}}
+After reviewing both positions, I have made a decision:
+
+**Decision:** {{DECISION}}
+
+**Reasoning:**
+{{DECISION_REASONING}}
+
+**Action Required:**
+{{ACTION_REQUIRED}}
+
+This decision is final. Please proceed accordingly.
+
+{{else}}
+I see you have different approaches. Let's discuss:
+
+**Questions for clarification:**
+{{CLARIFICATION_QUESTIONS}}
+
+Please provide your reasoning with evidence/considerations. 
+If unresolved after this round, I will make a binding decision.
+{{/if}}
+
+---
+
+*Disputes are normal in collaborative work. The goal is finding the best solution, not winning the argument.*

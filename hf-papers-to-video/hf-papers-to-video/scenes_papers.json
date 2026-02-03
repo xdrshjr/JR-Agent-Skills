@@ -1,0 +1,114 @@
+[
+  {
+    "id": "intro",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom"
+    },
+    "title": "🔬 今日 AI 论文精选",
+    "subtitle": "2026年2月1日 · 5篇前沿研究",
+    "duration": 150
+  },
+  {
+    "id": "paper1",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#3b82f6"
+    },
+    "title": "Idea2Story",
+    "paragraphs": ["自动将研究概念转化为完整科学叙事的智能流水线"],
+    "bulletPoints": [
+      "自动文献综述与知识图谱构建",
+      "研究创意到论文的全流程生成",
+      "基于同行评审反馈的迭代优化"
+    ],
+    "duration": 200
+  },
+  {
+    "id": "paper2",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-left",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#10b981"
+    },
+    "title": "SpatialGenEval",
+    "paragraphs": ["首个系统性评估文生图模型空间智能的基准测试"],
+    "bulletPoints": [
+      "涵盖25个真实场景的1230个测试用例",
+      "评估空间感知、推理与交互能力",
+      "揭示当前模型的核心瓶颈"
+    ],
+    "duration": 200
+  },
+  {
+    "id": "paper3",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#f59e0b"
+    },
+    "title": "LongCat-Flash-Lite",
+    "paragraphs": ["扩展嵌入层优于扩展专家的新型语言模型架构"],
+    "bulletPoints": [
+      "685亿参数，仅激活30亿",
+      "嵌入层参数占比超过30%",
+      "在编程和智能体任务上表现卓越"
+    ],
+    "duration": 200
+  },
+  {
+    "id": "paper4",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-left",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#8b5cf6"
+    },
+    "title": "DynamicVLA",
+    "paragraphs": ["专为动态物体操控设计的视觉语言动作模型"],
+    "bulletPoints": [
+      "4亿参数轻量级架构",
+      "连续推理与执行降低延迟",
+      "支持28千场景20万合成数据训练"
+    ],
+    "duration": 200
+  },
+  {
+    "id": "paper5",
+    "variant": "content-rich",
+    "layout": {
+      "imageLayout": "side-right",
+      "imageStyle": "card",
+      "imageAnimation": "float",
+      "accentColor": "#ef4444"
+    },
+    "title": "OCRVerse",
+    "paragraphs": ["首个端到端统一文本与视觉OCR的综合解决方案"],
+    "bulletPoints": [
+      "支持报纸、图表、网页等多元数据",
+      "两阶段训练：监督微调+强化学习",
+      "跨域数据融合避免冲突"
+    ],
+    "duration": 200
+  },
+  {
+    "id": "outro",
+    "variant": "hero",
+    "layout": {
+      "imageLayout": "background",
+      "imageAnimation": "zoom"
+    },
+    "title": "关注更多 AI 前沿",
+    "subtitle": "每天一分钟，掌握最新研究动态！",
+    "duration": 150
+  }
+]

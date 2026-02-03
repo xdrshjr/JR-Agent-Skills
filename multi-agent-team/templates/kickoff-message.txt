@@ -1,0 +1,79 @@
+# Kickoff Message Template
+
+🚀 **PROJECT KICKOFF** 🚀
+
+**Project:** {{PROJECT_NAME}}  
+**Mode:** {{MODE}}  
+**Timebox:** {{TIMEBOX}}
+
+---
+
+## Project Brief
+
+{{PROJECT_DESCRIPTION}}
+
+## Success Criteria
+
+{{SUCCESS_CRITERIA}}
+
+---
+
+## Team Assignments
+
+### 👤 {{AGENT_1_ROLE}} ({{AGENT_1_ID}})
+**Your Mission:**  
+{{AGENT_1_TASK}}
+
+**Deliverable:**  
+{{AGENT_1_DELIVERABLE}}
+
+**Dependencies:** {{AGENT_1_DEPENDENCIES}}
+
+---
+
+### 👤 {{AGENT_2_ROLE}} ({{AGENT_2_ID}})
+**Your Mission:**  
+{{AGENT_2_TASK}}
+
+**Deliverable:**  
+{{AGENT_2_DELIVERABLE}}
+
+**Dependencies:** {{AGENT_2_DEPENDENCIES}}
+
+---
+
+### 👤 {{AGENT_3_ROLE}} ({{AGENT_3_ID}})
+**Your Mission:**  
+{{AGENT_3_TASK}}
+
+**Deliverable:**  
+{{AGENT_3_DELIVERABLE}}
+
+**Dependencies:** {{AGENT_3_DEPENDENCIES}}
+
+---
+
+## Coordination Protocol
+
+1. **Work independently** on your assigned tasks
+2. **Collaborate directly** when dependencies or questions arise
+3. **Report progress** to PM every 5 minutes
+4. **Resolve disputes** within 2 rounds, then escalate to PM
+5. **Deliver on time** within the specified timebox
+
+## Communication Channels
+
+- **Team-wide updates:** Send to PM
+- **Direct collaboration:** Message teammate directly
+- **Disputes:** 2 rounds max, then PM decides
+
+---
+
+## Timeline
+
+- **T+0**: Kickoff (NOW)
+- **T+5min**: Progress check-in
+- **T+10min**: Mid-point review
+- **T+15min**: Final deliverables due
+
+**Let's build something great!** 🎯
