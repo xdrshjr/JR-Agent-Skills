@@ -15,9 +15,39 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 - **3 Executor Agents**: Dynamically assigned roles based on task type (e.g., Frontend Dev, Backend Dev, Designer)
 - **1 QA Agent**: Independent verification specialist who validates all executor deliverables
 
+### Team Context Awareness (NEW - 2026-02-05)
+
+**Problem Solved:** Agents now understand they are contributing **part of a larger whole** rather than creating complete standalone deliverables.
+
+**Key Features:**
+- **Section Assignment**: Each agent receives a specific section/part (e.g., "Chapter 1", "Backend API", "Literature Review")
+- **Full Team Visibility**: Agents see complete team structure, all assigned sections, and dependencies
+- **Real-Time Coordination**: WHITEBOARD shows live progress of all team members
+- **Task-Specific Structure**: Section assignments adapt to task type (document, code, research, video, design)
+
+**Section Assignment Examples:**
+- **Document Tasks**: "1. Executive Summary & Introduction", "2. Main Content & Analysis", "3. Conclusions & Recommendations"
+- **Code Tasks**: "Backend API & Business Logic", "Frontend UI & User Experience", "Database Schema & Data Layer"
+- **Research Tasks**: "Literature Review & Background", "Methodology & Data Collection", "Results & Discussion"
+- **Video Tasks**: "Script & Storyboard", "Visual Assets & Graphics", "Audio & Final Assembly"
+- **Design Tasks**: "Visual Design & Branding", "Interaction Design & UX Flow", "Assets & Design System"
+
+**Agent System Prompt Enhancements:**
+1. **Project Structure Section**: Shows overall deliverable, project outline, assigned section, integration context
+2. **Full Teammate Context**: Lists all teammates with their assigned sections, responsibilities, and deliverables
+3. **WHITEBOARD Reference**: Explains how to use WHITEBOARD for coordination and when to check it
+
+**Benefits:**
+- ✅ Prevents fragmented deliverables (no more 3 separate reports when 1 cohesive report is needed)
+- ✅ Clear boundaries between agent responsibilities
+- ✅ Better coordination through shared visibility
+- ✅ Cohesive final outputs that integrate seamlessly
+
+**Implementation:** See `IMPLEMENTATION_SUMMARY.md` for complete technical details.
+
 ### Execution Flow
 ```
-User Request → PM Analysis → Team Assembly → Task Distribution
+User Request → Requirement Clarification → PM Analysis → Team Assembly → Task Distribution
     ↓
 [Executors Work in Parallel] → Submit to QA
     ↓
@@ -28,6 +58,43 @@ User Request → PM Analysis → Team Assembly → Task Distribution
     ↓
 [QA Report] → [PM Final Acceptance] → Deliver to User
 ```
+
+### Requirement Clarification Phase (NEW - 2026-02-05)
+
+**Problem Solved:** Ensures requirements are well-understood BEFORE creating the multi-agent team, preventing wasted effort and misaligned deliverables.
+
+**Key Features:**
+- **Multi-Round Dialogue**: Minimum 2 rounds, soft maximum 3 rounds
+- **Adaptive Questioning**: 5 questions per round, targeting lowest-confidence dimensions
+- **Confidence-Based Stopping**: Automatically stops when confidence ≥ 75/100
+- **Understanding Summaries**: Shows current understanding before each question round
+- **Enriched Request**: Appends structured clarifications to original request
+
+**Confidence Dimensions** (weighted scoring):
+- **Scope Clarity (25%)**: Goal, boundaries, deliverables defined
+- **Technical Clarity (25%)**: Tech stack, constraints, dependencies clear
+- **Deliverable Clarity (20%)**: Format, structure, acceptance criteria defined
+- **Constraint Clarity (15%)**: Timeline, resources, limitations understood
+- **Context Clarity (15%)**: Background, audience, success metrics clear
+
+**Workflow:**
+1. **Round 1**: Ask 5 initial questions covering all dimensions
+2. **Evaluate Confidence**: Score each dimension (0-100)
+3. **Round 2+**: Ask 5 adaptive questions targeting gaps
+4. **Stop Criteria**: Confidence ≥ 75 AND minimum 2 rounds completed
+5. **Soft Maximum**: After round 3, offer user choice to continue or proceed
+6. **Output**: Enriched request with structured clarifications + Q&A history
+
+**Integration Point**: Between skill planning and team assembly in `pm-workflow.js`
+
+**Benefits:**
+- ✅ Reduces ambiguity before team creation
+- ✅ Prevents misaligned deliverables
+- ✅ Saves time by clarifying upfront
+- ✅ Improves team planning accuracy
+- ✅ Creates audit trail of requirements
+
+**Implementation:** See modules in `src/requirement-clarification.ts`, `src/confidence-evaluator.ts`, `src/question-generator.ts`
 
 ### Agent Lifecycle States
 
@@ -140,15 +207,31 @@ When QA rejects a deliverable:
 - `src/state-validator.ts` (280 lines): **NEW** - Consistency validation and recovery
 - `src/concurrency-manager.ts` (420 lines): **NEW** - Execution slot management and resource control
 
+### Requirement Clarification (NEW - 2026-02-05)
+- `src/requirement-clarification.ts` (300 lines): **NEW** - Main orchestrator for multi-round clarification
+- `src/clarification-state.ts` (150 lines): **NEW** - State management for clarification process
+- `src/confidence-evaluator.ts` (200 lines): **NEW** - Multi-dimensional confidence scoring
+- `src/question-generator.ts` (250 lines): **NEW** - Adaptive question generation targeting gaps
+- `test-clarification.js`: **NEW** - Test suite for clarification system
+
 ### Workflow Scripts
-- `pm-workflow.js`: **UPDATED** - PM coordination logic + approval management (now uses state-manager)
-- `agent-workflow.js`: Sub-agent autonomous planning workflow with enforcement instructions
+- `pm-workflow.js` (1950+ lines): **UPDATED** - PM coordination logic + approval management + section assignment + requirement clarification (now uses state-manager)
+- `agent-workflow.js` (290 lines): **UPDATED** - Sub-agent autonomous planning workflow with team context awareness
 - `skill-aware-planning.js`: User-specified skill validation (dynamic discovery by agents)
 - `timeout-monitor.js`: **UPDATED** - Timeout detection and recovery (now uses state-manager)
-- `whiteboard.js`: **UPDATED** - Shared state board (now uses state-manager)
+- `whiteboard.js` (610 lines): **UPDATED** - Shared state board with project structure display (now uses state-manager)
 
 ### Migration & Tools
 - `scripts/migrate-state.js`: **NEW** - Automatic migration tool for existing projects
+- `test-team-context.js`: **NEW** - Test suite for team context awareness and section assignment
+- `test-clarification.js`: **NEW** - Test suite for requirement clarification system
+
+### Documentation
+- `SKILL.md` (1816 lines): Complete skill specification with all protocols
+- `PM_QUICKREF.md`: Quick reference card for PM pause protocol
+- `PM_CHECKLIST.md`: Detailed checklist for PM operations
+- `README.md`: User-facing quick start guide
+- `IMPLEMENTATION_SUMMARY.md`: **NEW** - Team context awareness implementation details
 
 ### Configuration
 - `config/default-roles.yaml`: Default role templates for different task types (1711 lines, 41 roles, ~60KB)
@@ -158,7 +241,7 @@ When QA rejects a deliverable:
   - **Decision**: Keeping unified - excellent performance, well-organized, easy to search
   - **Evaluation**: See `doc/default-roles-evaluation.md` for detailed analysis
 - `tsconfig.json`: **NEW** - TypeScript compiler configuration
-- `package.json`: **UPDATED** - Added proper-lockfile dependency
+- `package.json`: **UPDATED** - Added proper-lockfile and typescript dependencies
 
 ### TypeScript Migration Strategy
 

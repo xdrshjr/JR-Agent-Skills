@@ -4,8 +4,10 @@ A virtual **3-person executor team + 1 independent QA agent** that collaborates 
 
 ## What You Get
 
+- **Requirement Clarification** to ensure clear understanding before starting
 - **Project Manager** who orchestrates everything
 - **3 Dynamic Team Members** assembled for your specific task
+- **Independent QA Agent** who validates all deliverables
 - **Two Modes**: Full Auto (hands-off) or Supervised (you control milestones)
 - **Professional Deliverables** aggregated from team outputs
 
@@ -18,10 +20,11 @@ Build a Chrome extension that highlights text on webpages and saves to a notes p
 ```
 
 The PM will:
-1. Analyze your task
-2. Propose a 3-person executor team + 1 QA agent configuration
-3. Ask you to choose FULL_AUTO or SUPERVISED mode
-4. Execute and deliver
+1. **Clarify requirements** through adaptive Q&A (2-3 rounds)
+2. Analyze your task with enriched understanding
+3. Propose a 3-person executor team + 1 QA agent configuration
+4. Ask you to choose FULL_AUTO or SUPERVISED mode
+5. Execute and deliver
 
 ## Examples
 
@@ -78,11 +81,26 @@ projects/
 
 ## Tips for Best Results
 
-1. **Be specific** about requirements and constraints
-2. **Choose mode based on complexity** - use SUPERVISED for critical tasks
-3. **Review the proposed team** - you can suggest role adjustments
-4. **Provide feedback** during milestones in SUPERVISED mode
-5. **Trust the process** - disputes and reworks are normal in teamwork
+1. **Answer clarification questions thoughtfully** - the PM will ask 5 questions per round to understand your needs
+2. **Be specific** about requirements and constraints during clarification
+3. **Choose mode based on complexity** - use SUPERVISED for critical tasks
+4. **Review the proposed team** - you can suggest role adjustments
+5. **Provide feedback** during milestones in SUPERVISED mode
+6. **Trust the process** - disputes and reworks are normal in teamwork
+
+## New Features
+
+### Requirement Clarification (2026-02-05)
+
+Before creating the team, the PM conducts an adaptive dialogue to clarify your requirements:
+
+- **2-3 rounds** of 5 questions each
+- **Adaptive questioning** targeting unclear areas
+- **Confidence scoring** across 5 dimensions (scope, technical, deliverables, constraints, context)
+- **Understanding summaries** showing what's been clarified
+- **Enriched request** with structured clarifications for better team planning
+
+See [REQUIREMENT_CLARIFICATION.md](REQUIREMENT_CLARIFICATION.md) for details.
 
 ## Configuration
 

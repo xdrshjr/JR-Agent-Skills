@@ -161,13 +161,40 @@ ${agentRole.responsibilities.join('\n')}
 **Deliverable:** ${agentRole.deliverable}
 **Timeline:** 30 minutes
 
-## Your Teammates
+## Project Structure & Your Contribution
 
-1. **${teammates[0].name}**
-   Handles: ${teammates[0].responsibilities.slice(0, 2).join(', ')}
+**Overall Deliverable:** ${projectBrief.finalDeliverable || 'Multi-part collaborative deliverable'}
 
-2. **${teammates[1].name}**
-   Handles: ${teammates[1].responsibilities.slice(0, 2).join(', ')}
+${projectBrief.outline ? `**Project Outline:**\n${projectBrief.outline}\n\n` : ''}
+**Your Assigned Section:**
+${agentRole.assignedSection || agentRole.deliverable}
+
+⚠️ **IMPORTANT:** You are responsible for ONLY your assigned section. Do not create a complete standalone deliverable. Your work will be integrated with your teammates' contributions.
+
+**Integration Context:**
+${(() => {
+  const agentIndex = allRoles.findIndex(r => r.name === agentRole.name);
+  const position = agentIndex === 0 ? 'at the beginning of the project'
+    : agentIndex === allRoles.length - 1 ? 'at the end of the project'
+    : 'in the middle of the project';
+  return `- Your section comes ${position}`;
+})()}
+- Dependencies: ${agentRole.dependencies && agentRole.dependencies.length > 0 ? agentRole.dependencies.join(', ') : 'None'}
+- Your output will be combined with: ${teammates.map(t => t.name).join(', ')}
+
+## Your Teammates (Full Context)
+
+You are working as part of a coordinated team. Here's what each teammate is responsible for:
+
+${teammates.map((teammate, idx) => `${idx + 1}. **${teammate.name}** (${teammate.expertise})
+   - Assigned Section: ${teammate.assignedSection || teammate.deliverable}
+   - Responsibilities: ${teammate.responsibilities.join(', ')}
+   - Deliverable: ${teammate.deliverable}`).join('\n\n')}
+
+**Coordination Strategy:**
+- Check WHITEBOARD regularly to see teammate progress
+- Ensure your section connects smoothly with adjacent sections
+- Communicate with teammates if you need information from their sections
 
 ${enableSkillDiscovery ? `
 ## Skill Discovery (Phase 0 - Before Planning)
@@ -197,6 +224,30 @@ Before you start planning, you MUST discover what skills are available in your e
 Awaiting PM approval to proceed."
 
 ` : ''}
+## Team Coordination Board (WHITEBOARD)
+
+**Location:** projects/${projectBrief.name}/WHITEBOARD.md
+
+**Purpose:** Real-time visibility into team progress
+
+**What You'll See:**
+- Current status of all team members
+- Completed sections and in-progress work
+- Blockers and decisions
+- Project timeline and milestones
+
+**How to Use:**
+- Read WHITEBOARD before planning to understand team context
+- Check WHITEBOARD during execution to avoid duplication
+- Update your status when completing milestones
+- Reference teammate progress when coordinating handoffs
+
+**When to Check:**
+- Before creating your plan (Phase 2)
+- Before starting execution (Phase 3)
+- When you need information from a teammate's section
+- When reporting progress to PM
+
 ## Your Workflow
 
 ${enableSkillDiscovery ? `**Phase 0: Skill Discovery (5 minutes)**
@@ -944,6 +995,9 @@ interface Role {
   expertise: string;
   responsibilities: string[];
   deliverable: string;
+  assignedSection?: string;      // NEW: Specific section this role owns
+  sectionOrder?: number;          // NEW: Order in final deliverable
+  dependencies?: string[];        // NEW: Roles this role depends on
 }
 
 interface ProjectBrief {
@@ -951,6 +1005,8 @@ interface ProjectBrief {
   description: string;
   successCriteria: string;
   roles: Role[];
+  finalDeliverable?: string;      // NEW: Description of complete deliverable
+  outline?: string;               // NEW: Project structure/outline
 }
 
 interface ProgressUpdate {

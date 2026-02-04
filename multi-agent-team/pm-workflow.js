@@ -19,6 +19,18 @@ try {
   }
 }
 
+// Import requirement clarification system
+let requirementClarification;
+try {
+  requirementClarification = require('./src/requirement-clarification');
+} catch (error) {
+  try {
+    requirementClarification = require('./dist/requirement-clarification');
+  } catch (e) {
+    console.warn('⚠️  Requirement clarification not available, skipping clarification phase');
+  }
+}
+
 // Dynamic project directory resolution (replaces hardcoded PROJECTS_DIR)
 function resolveProjectsDir(explicitDir) {
   if (stateManager && stateManager.resolveProjectsDir) {
@@ -96,16 +108,28 @@ async function initializeProject(userRequest, options = {}) {
 
     console.log(`🚀 初始化项目: ${projectId}`);
 
-    // 1. 技能感知分析
+    // 1. 需求澄清阶段 (Requirement Clarification Phase)
+    // Note: This is a placeholder. Actual clarification should be done by the caller
+    // using conductRequirementClarification() before calling initializeProject()
+    let enrichedRequest = userRequest;
+    let clarificationResult = options.clarificationResult || null;
+
+    // If clarification result is provided, use the enriched request
+    if (clarificationResult && clarificationResult.enrichedRequest) {
+      enrichedRequest = clarificationResult.enrichedRequest;
+      console.log(`✅ 使用已澄清的需求 (${clarificationResult.rounds} 轮, 置信度: ${clarificationResult.finalConfidence}/100)`);
+    }
+
+    // 2. 技能感知分析
     let skillPlanning;
     try {
-      skillPlanning = initializeSkillAwarePlanning(userRequest);
+      skillPlanning = initializeSkillAwarePlanning(enrichedRequest);
     } catch (e) {
       console.error('❌ 技能感知分析失败:', e.message);
       throw new Error(`无法分析技能需求: ${e.message}`);
     }
 
-    // 2. 创建项目目录结构
+    // 3. 创建项目目录结构
     try {
       createProjectStructure(projectDir);
     } catch (e) {
@@ -113,16 +137,22 @@ async function initializeProject(userRequest, options = {}) {
       throw new Error(`无法创建项目目录: ${e.message}`);
     }
 
-    // 3. Use state manager to create project state
+    // 4. Use state manager to create project state
     if (stateManager && stateManager.createProject) {
       try {
-        const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
+        const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis, enrichedRequest);
 
         await stateManager.createProject(projectId, {
           id: projectId,
           status: 'init',
           mode: options.mode || 'FULL_AUTO',
-          userRequest,
+          userRequest: enrichedRequest, // Use enriched request
+          originalRequest: userRequest, // Keep original for reference
+          clarificationData: clarificationResult ? {
+            rounds: clarificationResult.rounds,
+            finalConfidence: clarificationResult.finalConfidence,
+            insights: clarificationResult.insights
+          } : null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           team: teamSuggestion.map(role => ({
@@ -168,9 +198,33 @@ async function initializeProject(userRequest, options = {}) {
     // 6. 初始化白板
     try {
       const { initializeWhiteboard } = require('./whiteboard');
-      initializeWhiteboard(projectDir, projectId);
+      const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
+
+      // Create projectBrief for whiteboard
+      const projectBrief = {
+        finalDeliverable: skillPlanning.analysis.finalDeliverable || '多部分协作成果',
+        roles: teamSuggestion.map(role => ({
+          name: role.role,
+          assignedSection: role.assignedSection || role.responsibility,
+          deliverable: role.responsibility
+        }))
+      };
+
+      initializeWhiteboard(projectDir, projectId, projectBrief);
     } catch (e) {
       console.warn('⚠️ 初始化白板失败:', e.message);
+      if (process.env.DEBUG) {
+        console.warn('   Stack:', e.stack);
+      }
+      // Fallback: initialize without projectBrief
+      try {
+        const { initializeWhiteboard } = require('./whiteboard');
+        console.log('   尝试使用基础模式初始化白板...');
+        initializeWhiteboard(projectDir, projectId, null);
+        console.log('   ✅ 基础白板初始化成功');
+      } catch (fallbackError) {
+        console.error('❌ 白板初始化完全失败:', fallbackError.message);
+      }
     }
 
     // 7. 初始化超时监控器（带崩溃恢复）
@@ -329,7 +383,7 @@ ${generateSkillAssignmentTable(skillPlanning.analysis)}
 /**
  * 生成团队角色建议
  */
-function generateTeamSuggestion(analysis) {
+function generateTeamSuggestion(analysis, userRequest = '') {
   const roles = [];
   
   // 根据检测到的任务类型推荐角色
@@ -390,8 +444,240 @@ function generateTeamSuggestion(analysis) {
       skills: []
     });
   }
-  
-  return roles.slice(0, 3); // 最多3个角色
+
+  // Assign specific sections to each role
+  const assignedRoles = assignSectionsToRoles(roles.slice(0, 3), analysis);
+  return assignedRoles;
+}
+
+/**
+ * Assign specific sections/parts to each role based on task type
+ */
+function assignSectionsToRoles(roles, analysis) {
+  const taskType = detectTaskType(analysis);
+
+  // Separate QA from executors - QA validates all sections, doesn't own one
+  const executors = roles.filter(r => r.role !== 'QA Reviewer');
+  const qa = roles.find(r => r.role === 'QA Reviewer');
+
+  // Assign sections to executors only
+  let assignedExecutors;
+  switch (taskType) {
+    case 'document':
+      assignedExecutors = assignDocumentSections(executors, analysis);
+      break;
+    case 'code':
+      assignedExecutors = assignCodeModules(executors, analysis);
+      break;
+    case 'research':
+      assignedExecutors = assignResearchAreas(executors, analysis);
+      break;
+    case 'design':
+      assignedExecutors = assignDesignComponents(executors, analysis);
+      break;
+    case 'video':
+      assignedExecutors = assignVideoComponents(executors, analysis);
+      break;
+    default:
+      assignedExecutors = assignGenericParts(executors, analysis);
+  }
+
+  // Add QA back with special section indicating they validate all sections
+  if (qa) {
+    assignedExecutors.push({
+      ...qa,
+      assignedSection: 'Quality Assurance & Validation (All Sections)',
+      sectionOrder: 999, // After all executors
+      dependencies: assignedExecutors.map(e => e.role) // Depends on all executors
+    });
+  }
+
+  return assignedExecutors;
+}
+
+/**
+ * Detect task type from analysis
+ */
+function detectTaskType(analysis) {
+  const types = analysis.detectedTypes || [];
+
+  if (types.includes('document') || types.includes('writing')) return 'document';
+  if (types.includes('code') || types.includes('development')) return 'code';
+  if (types.includes('research') || types.includes('analysis')) return 'research';
+  if (types.includes('design') || types.includes('image')) return 'design';
+  if (types.includes('video')) return 'video';
+
+  return 'generic';
+}
+
+/**
+ * Assign document sections (e.g., Chapter 1, Chapter 2, etc.)
+ */
+function assignDocumentSections(roles, analysis) {
+  const sections = [
+    { title: '1. Executive Summary & Introduction', order: 1 },
+    { title: '2. Main Content & Analysis', order: 2 },
+    { title: '3. Conclusions & Recommendations', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: sections[idx]?.title || `Section ${idx + 1}`,
+    sectionOrder: sections[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Assign code modules (e.g., Backend API, Frontend UI, Database)
+ */
+function assignCodeModules(roles, analysis) {
+  const modules = [
+    { name: 'Backend API & Business Logic', order: 1 },
+    { name: 'Frontend UI & User Experience', order: 2 },
+    { name: 'Database Schema & Data Layer', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: modules[idx]?.name || `Module ${idx + 1}`,
+    sectionOrder: modules[idx]?.order || idx + 1,
+    dependencies: determineCodeDependencies(role, roles)
+  }));
+}
+
+/**
+ * Assign research areas (e.g., Literature Review, Methodology, Results)
+ */
+function assignResearchAreas(roles, analysis) {
+  const areas = [
+    { name: 'Literature Review & Background', order: 1 },
+    { name: 'Methodology & Data Collection', order: 2 },
+    { name: 'Results & Discussion', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: areas[idx]?.name || `Research Area ${idx + 1}`,
+    sectionOrder: areas[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Assign design components (e.g., Visual Design, Interaction Design, Assets)
+ */
+function assignDesignComponents(roles, analysis) {
+  const components = [
+    { name: 'Visual Design & Branding', order: 1 },
+    { name: 'Interaction Design & UX Flow', order: 2 },
+    { name: 'Assets & Design System', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: components[idx]?.name || `Design Component ${idx + 1}`,
+    sectionOrder: components[idx]?.order || idx + 1,
+    dependencies: determineDesignDependencies(role, roles)
+  }));
+}
+
+/**
+ * Assign video production components
+ */
+function assignVideoComponents(roles, analysis) {
+  const components = [
+    { name: 'Script & Storyboard', order: 1 },
+    { name: 'Visual Assets & Graphics', order: 2 },
+    { name: 'Audio & Final Assembly', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: components[idx]?.name || `Video Component ${idx + 1}`,
+    sectionOrder: components[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Generic part assignment for mixed/unknown task types
+ */
+function assignGenericParts(roles, analysis) {
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: `Part ${idx + 1}: ${role.responsibility}`,
+    sectionOrder: idx + 1,
+    dependencies: []
+  }));
+}
+
+/**
+ * Determine code dependencies between roles
+ */
+function determineCodeDependencies(role, allRoles) {
+  const roleKeywords = {
+    backend: ['backend', 'api', 'server', 'service'],
+    frontend: ['frontend', 'ui', 'client', 'web', 'interface'],
+    database: ['database', 'db', 'data', 'storage']
+  };
+
+  const roleLower = role.role.toLowerCase();
+
+  // Backend has no dependencies
+  if (roleKeywords.backend.some(kw => roleLower.includes(kw))) {
+    return [];
+  }
+
+  // Frontend depends on Backend
+  if (roleKeywords.frontend.some(kw => roleLower.includes(kw))) {
+    const backend = allRoles.find(r =>
+      roleKeywords.backend.some(kw => r.role.toLowerCase().includes(kw))
+    );
+    return backend ? [backend.role] : [];
+  }
+
+  // Database has no dependencies
+  return [];
+}
+
+/**
+ * Determine design dependencies between roles
+ */
+function determineDesignDependencies(role, allRoles) {
+  const roleKeywords = {
+    visual: ['visual', 'graphic', 'brand', 'style'],
+    interaction: ['interaction', 'ux', 'experience', 'flow'],
+    assets: ['asset', 'resource', 'component', 'system']
+  };
+
+  const roleLower = role.role.toLowerCase();
+
+  // Visual design comes first
+  if (roleKeywords.visual.some(kw => roleLower.includes(kw))) {
+    return [];
+  }
+
+  // Interaction design depends on visual design
+  if (roleKeywords.interaction.some(kw => roleLower.includes(kw))) {
+    const visual = allRoles.find(r =>
+      roleKeywords.visual.some(kw => r.role.toLowerCase().includes(kw))
+    );
+    return visual ? [visual.role] : [];
+  }
+
+  // Assets depend on both visual and interaction
+  if (roleKeywords.assets.some(kw => roleLower.includes(kw))) {
+    const deps = allRoles.filter(r => {
+      const rLower = r.role.toLowerCase();
+      return roleKeywords.visual.some(kw => rLower.includes(kw)) ||
+             roleKeywords.interaction.some(kw => rLower.includes(kw));
+    });
+    return deps.map(d => d.role);
+  }
+
+  // Default: no dependencies
+  return [];
 }
 
 /**
@@ -1537,6 +1823,87 @@ async function getValidationPlansAwaitingApproval(projectDir) {
   }
 }
 
+/**
+ * Conduct requirement clarification with user
+ * Wrapper function that integrates with AskUserQuestion tool
+ *
+ * @param {string} userRequest - Original user request
+ * @param {Function} askUserQuestionTool - AskUserQuestion tool function
+ * @returns {Promise<object>} Clarification result
+ */
+async function conductRequirementClarification(userRequest, askUserQuestionTool) {
+  if (!requirementClarification || !requirementClarification.clarifyRequirements) {
+    console.warn('⚠️  Requirement clarification module not available');
+    return {
+      enrichedRequest: userRequest,
+      rounds: 0,
+      finalConfidence: 0,
+      insights: { scope: [], technical: [], deliverables: [], constraints: [], context: [] }
+    };
+  }
+
+  try {
+    console.log('💬 开始需求澄清流程...');
+
+    const result = await requirementClarification.clarifyRequirements(userRequest, {
+      minRounds: 2,
+      maxRounds: 3,
+      askUserQuestion: async (questions) => {
+        // Format questions for AskUserQuestion tool
+        const toolQuestions = questions.map((q, index) => ({
+          question: q.text,
+          header: getDimensionLabel(q.dimension),
+          options: [
+            {
+              label: 'Answer',
+              description: 'Provide your answer to this question'
+            }
+          ],
+          multiSelect: false
+        }));
+
+        // Call AskUserQuestion tool
+        const response = await askUserQuestionTool({ questions: toolQuestions });
+
+        // Parse answers from tool response
+        const answers = questions.map((q, index) => ({
+          questionId: q.id,
+          text: response[`question_${index}`] || response[index] || '',
+          timestamp: new Date().toISOString()
+        }));
+
+        return answers;
+      }
+    });
+
+    console.log(`✅ 需求澄清完成: ${result.rounds} 轮, 置信度 ${result.finalConfidence}/100`);
+    return result;
+
+  } catch (error) {
+    console.error('❌ 需求澄清失败:', error.message);
+    return {
+      enrichedRequest: userRequest,
+      rounds: 0,
+      finalConfidence: 0,
+      insights: { scope: [], technical: [], deliverables: [], constraints: [], context: [] }
+    };
+  }
+}
+
+/**
+ * Get human-readable label for confidence dimension
+ */
+function getDimensionLabel(dimension) {
+  const labels = {
+    scope: 'Scope',
+    technical: 'Technical',
+    deliverables: 'Deliverable',
+    constraints: 'Constraints',
+    context: 'Context'
+  };
+  return labels[dimension] || dimension;
+}
+
 // 导出功能
 module.exports = {
   initializeProject,
@@ -1544,6 +1911,9 @@ module.exports = {
   updateAgentStatus,
   logProjectEvent,
   generateTeamSuggestion,
+
+  // 需求澄清相关 (NEW)
+  conductRequirementClarification,
 
   // 超时监控相关
   startPeriodicMonitoring,

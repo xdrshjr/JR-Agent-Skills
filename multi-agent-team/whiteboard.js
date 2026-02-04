@@ -38,9 +38,25 @@ const WHITEBOARD_FILENAME = 'WHITEBOARD.md';
 /**
  * 初始化白板
  */
-function initializeWhiteboard(projectDir, projectId) {
+function initializeWhiteboard(projectDir, projectId, projectBrief = null) {
   const whiteboardPath = path.join(projectDir, WHITEBOARD_FILENAME);
-  
+
+  let structureSection = '';
+  if (projectBrief && projectBrief.roles) {
+    structureSection = `
+## 🎯 项目结构
+
+**最终交付物:** ${projectBrief.finalDeliverable || '多部分协作成果'}
+
+**分配的部分:**
+${projectBrief.roles.map(r =>
+  `- **${r.assignedSection || r.deliverable}** → ${r.name}`
+).join('\n')}
+
+---
+`;
+  }
+
   const initialContent = `# 项目白板 — ${projectId}
 
 > 实时共享状态板，所有团队成员可见
@@ -55,18 +71,20 @@ function initializeWhiteboard(projectDir, projectId) {
 - **当前阶段**: 初始化
 
 ---
-
+${structureSection}
 ## 👥 团队成员状态
 
-| 角色 | 状态 | 当前阶段 | 进度 | 最后更新 |
-|------|------|----------|------|----------|
-| | | | | |
+| 角色 | 分配部分 | 状态 | 当前阶段 | 进度 | 最后更新 |
+|------|----------|------|----------|------|----------|
+${projectBrief && projectBrief.roles ? projectBrief.roles.map(r =>
+  `| ${r.name} | ${r.assignedSection || r.deliverable} | 🟡 启动中 | 技能发现 | 0% | - |`
+).join('\n') : '| | | | | | |'}
 
 ---
 
 ## 📝 待办事项
 
-- [ ] 
+- [ ]
 
 ---
 
