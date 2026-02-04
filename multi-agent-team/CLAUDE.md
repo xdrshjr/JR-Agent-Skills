@@ -15,6 +15,36 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 - **3 Executor Agents**: Dynamically assigned roles based on task type (e.g., Frontend Dev, Backend Dev, Designer)
 - **1 QA Agent**: Independent verification specialist who validates all executor deliverables
 
+### Team Context Awareness (NEW - 2026-02-05)
+
+**Problem Solved:** Agents now understand they are contributing **part of a larger whole** rather than creating complete standalone deliverables.
+
+**Key Features:**
+- **Section Assignment**: Each agent receives a specific section/part (e.g., "Chapter 1", "Backend API", "Literature Review")
+- **Full Team Visibility**: Agents see complete team structure, all assigned sections, and dependencies
+- **Real-Time Coordination**: WHITEBOARD shows live progress of all team members
+- **Task-Specific Structure**: Section assignments adapt to task type (document, code, research, video, design)
+
+**Section Assignment Examples:**
+- **Document Tasks**: "1. Executive Summary & Introduction", "2. Main Content & Analysis", "3. Conclusions & Recommendations"
+- **Code Tasks**: "Backend API & Business Logic", "Frontend UI & User Experience", "Database Schema & Data Layer"
+- **Research Tasks**: "Literature Review & Background", "Methodology & Data Collection", "Results & Discussion"
+- **Video Tasks**: "Script & Storyboard", "Visual Assets & Graphics", "Audio & Final Assembly"
+- **Design Tasks**: "Visual Design & Branding", "Interaction Design & UX Flow", "Assets & Design System"
+
+**Agent System Prompt Enhancements:**
+1. **Project Structure Section**: Shows overall deliverable, project outline, assigned section, integration context
+2. **Full Teammate Context**: Lists all teammates with their assigned sections, responsibilities, and deliverables
+3. **WHITEBOARD Reference**: Explains how to use WHITEBOARD for coordination and when to check it
+
+**Benefits:**
+- ✅ Prevents fragmented deliverables (no more 3 separate reports when 1 cohesive report is needed)
+- ✅ Clear boundaries between agent responsibilities
+- ✅ Better coordination through shared visibility
+- ✅ Cohesive final outputs that integrate seamlessly
+
+**Implementation:** See `IMPLEMENTATION_SUMMARY.md` for complete technical details.
+
 ### Execution Flow
 ```
 User Request → PM Analysis → Team Assembly → Task Distribution
@@ -141,14 +171,22 @@ When QA rejects a deliverable:
 - `src/concurrency-manager.ts` (420 lines): **NEW** - Execution slot management and resource control
 
 ### Workflow Scripts
-- `pm-workflow.js`: **UPDATED** - PM coordination logic + approval management (now uses state-manager)
-- `agent-workflow.js`: Sub-agent autonomous planning workflow with enforcement instructions
+- `pm-workflow.js` (1468 lines): **UPDATED** - PM coordination logic + approval management + section assignment (now uses state-manager)
+- `agent-workflow.js` (290 lines): **UPDATED** - Sub-agent autonomous planning workflow with team context awareness
 - `skill-aware-planning.js`: User-specified skill validation (dynamic discovery by agents)
 - `timeout-monitor.js`: **UPDATED** - Timeout detection and recovery (now uses state-manager)
-- `whiteboard.js`: **UPDATED** - Shared state board (now uses state-manager)
+- `whiteboard.js` (610 lines): **UPDATED** - Shared state board with project structure display (now uses state-manager)
 
 ### Migration & Tools
 - `scripts/migrate-state.js`: **NEW** - Automatic migration tool for existing projects
+- `test-team-context.js`: **NEW** - Test suite for team context awareness and section assignment
+
+### Documentation
+- `SKILL.md` (1816 lines): Complete skill specification with all protocols
+- `PM_QUICKREF.md`: Quick reference card for PM pause protocol
+- `PM_CHECKLIST.md`: Detailed checklist for PM operations
+- `README.md`: User-facing quick start guide
+- `IMPLEMENTATION_SUMMARY.md`: **NEW** - Team context awareness implementation details
 
 ### Configuration
 - `config/default-roles.yaml`: Default role templates for different task types (1711 lines, 41 roles, ~60KB)
@@ -158,7 +196,7 @@ When QA rejects a deliverable:
   - **Decision**: Keeping unified - excellent performance, well-organized, easy to search
   - **Evaluation**: See `doc/default-roles-evaluation.md` for detailed analysis
 - `tsconfig.json`: **NEW** - TypeScript compiler configuration
-- `package.json`: **UPDATED** - Added proper-lockfile dependency
+- `package.json`: **UPDATED** - Added proper-lockfile and typescript dependencies
 
 ### TypeScript Migration Strategy
 

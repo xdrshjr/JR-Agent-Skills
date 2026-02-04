@@ -168,7 +168,19 @@ async function initializeProject(userRequest, options = {}) {
     // 6. 初始化白板
     try {
       const { initializeWhiteboard } = require('./whiteboard');
-      initializeWhiteboard(projectDir, projectId);
+      const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
+
+      // Create projectBrief for whiteboard
+      const projectBrief = {
+        finalDeliverable: skillPlanning.analysis.finalDeliverable || '多部分协作成果',
+        roles: teamSuggestion.map(role => ({
+          name: role.role,
+          assignedSection: role.assignedSection || role.responsibility,
+          deliverable: role.responsibility
+        }))
+      };
+
+      initializeWhiteboard(projectDir, projectId, projectBrief);
     } catch (e) {
       console.warn('⚠️ 初始化白板失败:', e.message);
     }
@@ -390,8 +402,186 @@ function generateTeamSuggestion(analysis) {
       skills: []
     });
   }
-  
-  return roles.slice(0, 3); // 最多3个角色
+
+  // Assign specific sections to each role
+  const assignedRoles = assignSectionsToRoles(roles.slice(0, 3), analysis);
+  return assignedRoles;
+}
+
+/**
+ * Assign specific sections/parts to each role based on task type
+ */
+function assignSectionsToRoles(roles, analysis) {
+  const taskType = detectTaskType(analysis);
+
+  switch (taskType) {
+    case 'document':
+      return assignDocumentSections(roles, analysis);
+    case 'code':
+      return assignCodeModules(roles, analysis);
+    case 'research':
+      return assignResearchAreas(roles, analysis);
+    case 'design':
+      return assignDesignComponents(roles, analysis);
+    case 'video':
+      return assignVideoComponents(roles, analysis);
+    default:
+      return assignGenericParts(roles, analysis);
+  }
+}
+
+/**
+ * Detect task type from analysis
+ */
+function detectTaskType(analysis) {
+  const types = analysis.detectedTypes || [];
+
+  if (types.includes('document') || types.includes('writing')) return 'document';
+  if (types.includes('code') || types.includes('development')) return 'code';
+  if (types.includes('research') || types.includes('analysis')) return 'research';
+  if (types.includes('design') || types.includes('image')) return 'design';
+  if (types.includes('video')) return 'video';
+
+  return 'generic';
+}
+
+/**
+ * Assign document sections (e.g., Chapter 1, Chapter 2, etc.)
+ */
+function assignDocumentSections(roles, analysis) {
+  const sections = [
+    { title: '1. Executive Summary & Introduction', order: 1 },
+    { title: '2. Main Content & Analysis', order: 2 },
+    { title: '3. Conclusions & Recommendations', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: sections[idx]?.title || `Section ${idx + 1}`,
+    sectionOrder: sections[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Assign code modules (e.g., Backend API, Frontend UI, Database)
+ */
+function assignCodeModules(roles, analysis) {
+  const modules = [
+    { name: 'Backend API & Business Logic', order: 1 },
+    { name: 'Frontend UI & User Experience', order: 2 },
+    { name: 'Database Schema & Data Layer', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: modules[idx]?.name || `Module ${idx + 1}`,
+    sectionOrder: modules[idx]?.order || idx + 1,
+    dependencies: determineCodeDependencies(role, roles)
+  }));
+}
+
+/**
+ * Assign research areas (e.g., Literature Review, Methodology, Results)
+ */
+function assignResearchAreas(roles, analysis) {
+  const areas = [
+    { name: 'Literature Review & Background', order: 1 },
+    { name: 'Methodology & Data Collection', order: 2 },
+    { name: 'Results & Discussion', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: areas[idx]?.name || `Research Area ${idx + 1}`,
+    sectionOrder: areas[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Assign design components (e.g., Visual Design, Interaction Design, Assets)
+ */
+function assignDesignComponents(roles, analysis) {
+  const components = [
+    { name: 'Visual Design & Branding', order: 1 },
+    { name: 'Interaction Design & UX Flow', order: 2 },
+    { name: 'Assets & Design System', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: components[idx]?.name || `Design Component ${idx + 1}`,
+    sectionOrder: components[idx]?.order || idx + 1,
+    dependencies: determineDesignDependencies(role, roles)
+  }));
+}
+
+/**
+ * Assign video production components
+ */
+function assignVideoComponents(roles, analysis) {
+  const components = [
+    { name: 'Script & Storyboard', order: 1 },
+    { name: 'Visual Assets & Graphics', order: 2 },
+    { name: 'Audio & Final Assembly', order: 3 }
+  ];
+
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: components[idx]?.name || `Video Component ${idx + 1}`,
+    sectionOrder: components[idx]?.order || idx + 1,
+    dependencies: idx > 0 ? [roles[idx - 1].role] : []
+  }));
+}
+
+/**
+ * Generic part assignment for mixed/unknown task types
+ */
+function assignGenericParts(roles, analysis) {
+  return roles.map((role, idx) => ({
+    ...role,
+    assignedSection: `Part ${idx + 1}: ${role.responsibility}`,
+    sectionOrder: idx + 1,
+    dependencies: []
+  }));
+}
+
+/**
+ * Determine code dependencies between roles
+ */
+function determineCodeDependencies(role, allRoles) {
+  // Backend typically has no dependencies
+  if (role.role.includes('Backend')) return [];
+
+  // Frontend depends on Backend
+  if (role.role.includes('Frontend')) {
+    const backend = allRoles.find(r => r.role.includes('Backend'));
+    return backend ? [backend.role] : [];
+  }
+
+  // Database typically has no dependencies
+  return [];
+}
+
+/**
+ * Determine design dependencies between roles
+ */
+function determineDesignDependencies(role, allRoles) {
+  // Visual design comes first
+  if (role.role.includes('Visual')) return [];
+
+  // Interaction design depends on visual design
+  if (role.role.includes('Interaction')) {
+    const visual = allRoles.find(r => r.role.includes('Visual'));
+    return visual ? [visual.role] : [];
+  }
+
+  // Assets depend on both
+  const deps = allRoles.filter(r =>
+    r.role.includes('Visual') || r.role.includes('Interaction')
+  );
+  return deps.map(d => d.role);
 }
 
 /**
