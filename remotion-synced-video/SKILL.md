@@ -13,6 +13,7 @@ metadata:
 
 - 🖼️ **融入式图片展示** - 图片作为内容的一部分，支持侧边、浮动、卡片等多种布局
 - 📝 **丰富的文字内容** - 支持多段落、要点列表、统计数据、引用等多种内容类型
+- 💬 **智能字幕系统** - 逐句字幕与音频精准同步，支持自动时间轴分配
 - 🔤 **超大字体设计** - 专为视频优化的字体大小，确保在各种屏幕上清晰可读
 - 🎬 **丰富的动画效果** - 打字机、逐行淡入、关键词高亮、数字滚动等动画
 - ✅ **完美音视频同步** - 每个场景等待音频播放完成
@@ -191,6 +192,53 @@ my-video/
 | `quote` | {text, author?} | 引用文字和作者 |
 | `stat` | {value, label, suffix?} | 统计数据展示 |
 | `highlightKeywords` | string[] | 需要高亮的关键词 |
+| `subtitles` | object | 逐句字幕配置（见下方） |
+
+### 逐句字幕配置
+
+通过 `subtitles` 字段配置与音频同步的字幕：
+
+```json
+{
+  "id": "intro",
+  "title": "AGI 早已实现",
+  "subtitles": {
+    "sentences": [
+      "Nature 重磅评论：",
+      "AGI 早已实现，人类却不敢承认。",
+      "就在五年前，我们还没有 AGI；",
+      "而今天，我们已经拥有它。"
+    ],
+    "mode": "word-count",
+    "style": {
+      "position": "bottom",
+      "bgOpacity": 0.8,
+      "fontSize": 52,
+      "maxWidth": "90%",
+      "bottomOffset": 100
+    }
+  }
+}
+```
+
+**字幕配置选项：**
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `sentences` | string[] | 字幕句子数组，每句会按时间显示 |
+| `mode` | string | 时间分配模式：`word-count`(按字数) / `equal`(平均) |
+| `style.position` | string | 位置：`bottom`(底部) / `middle`(中间) |
+| `style.bgOpacity` | number | 背景透明度，0-1 |
+| `style.fontSize` | number | 字体大小(px) |
+| `style.maxWidth` | string | 最大宽度，如 `"90%"` |
+| `style.bottomOffset` | number | 距底部距离(px) |
+
+**时间分配模式：**
+
+- **`word-count`** (默认)：按句子字数比例分配音频时长，长句显示更久
+- **`equal`**：平均分配音频时长给每句话
+
+> 💡 **提示**：按字数分配通常更自然，因为长句需要更多时间阅读。
 
 ## 字体大小规格
 
@@ -452,18 +500,33 @@ python ~/clawd/skills/doubao-open-tts/scripts/tts.py "你的文案" \
 # 5. 搜索图片
 node src/../scripts/search_images.js scenes.json public/images
 
-# 6. 预览
+# 6. 测量音频时长并生成配置文件（关键步骤！）
+# 这确保每个场景的时长与音频完全同步
+echo "{"> audio-durations.json
+for file in public/audio/*.mp3; do
+  filename=$(basename "$file" .mp3)
+  # 获取音频时长并加2秒缓冲
+  duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" | cut -d. -f1)
+  duration=$((duration + 2))
+  echo "  \"$filename\": $duration," >> audio-durations.json
+done
+# 删除最后一个逗号并关闭 JSON
+truncate -s-2 audio-durations.json
+echo "" >> audio-durations.json
+echo "}" >> audio-durations.json
+
+# 7. 预览
 npx remotion preview src/index.tsx
 
-# 7. 渲染所有场景
+# 8. 渲染所有场景
 npx remotion render src/index.tsx Scene-intro out/intro.mp4
 npx remotion render src/index.tsx Scene-history out/history.mp4
 # ... 渲染其他场景
 
-# 8. 拼接视频
+# 9. 拼接视频
 ffmpeg -f concat -i filelist.txt -c copy output/final.mp4
 
-# 9. 压缩（如需）
+# 10. 压缩（如需）
 ffmpeg -i output/final.mp4 -b:v 1.5M -b:a 128k output/final_compressed.mp4
 ```
 
@@ -490,6 +553,132 @@ Solution: 更换为解说小明 (zh_male_jieshuoxiaoming_moon_bigtts) 或其他�
 ```
 Solution: 使用 FFmpeg 压缩，降低 -b:v 码率参数
 ```
+
+**问题：语音还没说完画面就切换了**
+```
+原因：场景时长固定，没有根据实际音频长度调整
+Solution: 
+1. 使用 ffprobe 测量每个音频的实际时长
+2. 生成 audio-durations.json 配置文件
+3. 在 index.tsx 中读取配置并动态计算帧数
+
+示例代码：
+// index.tsx
+import audioDurations from '../audio-durations.json';
+
+function getAudioDuration(sceneId: string): number {
+  return (audioDurations as Record<string, number>)[sceneId] || 5;
+}
+
+// 在 Composition 中使用
+<Composition
+  durationInFrames={getAudioDuration(scene.id) * 30} // 30fps
+  ...
+/>
+```
+
+---
+
+## 🎯 音频时长同步最佳实践
+
+### 为什么需要同步？
+
+当视频由多个场景拼接而成时，每个场景的**画面时长必须与音频时长完全匹配**，否则会出现：
+- ❌ 语音还没说完，画面就切到下一个场景
+- ❌ 语音已经结束，画面还停留在当前场景
+
+### 解决方案：音频时长配置
+
+**步骤 1：创建音频时长测量脚本**
+
+创建 `scripts/measure-audio.sh`：
+```bash
+#!/bin/bash
+AUDIO_DIR="public/audio"
+OUTPUT_FILE="audio-durations.json"
+
+echo "{"
+first=true
+for file in "$AUDIO_DIR"/*.mp3; do
+  filename=$(basename "$file" .mp3)
+  duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" | cut -d. -f1)
+  if [ -z "$duration" ]; then duration=5; fi
+  duration=$((duration + 2))  # 加2秒缓冲
+  
+  if [ "$first" = true ]; then first=false; else echo ","; fi
+  echo "  \"$filename\": $duration"
+done
+echo ""
+echo "}"
+```
+
+**步骤 2：更新 index.tsx 读取时长**
+
+```typescript
+import {Composition, registerRoot} from 'remotion';
+import {SceneTemplate} from './scenes/SceneTemplate';
+import audioDurations from '../audio-durations.json'; // 导入配置
+
+const FPS = 30;
+
+// 从配置文件获取音频时长
+function getAudioDuration(sceneId: string): number {
+  return (audioDurations as Record<string, number>)[sceneId] || 5;
+}
+
+// 计算帧数
+function calculateFrames(durationInSeconds: number): number {
+  return Math.ceil(durationInSeconds * FPS);
+}
+
+export const RemotionRoot: React.FC = () => {
+  return (
+    <>
+      {scenes.map((scene) => (
+        <Composition
+          key={scene.id}
+          id={`Scene-${scene.id}`}
+          component={SceneTemplate}
+          durationInFrames={calculateFrames(getAudioDuration(scene.id))}
+          fps={FPS}
+          width={1920}
+          height={1080}
+          defaultProps={{...}}
+        />
+      ))}
+    </>
+  );
+};
+
+registerRoot(RemotionRoot);
+```
+
+**步骤 3：在渲染流程中执行测量**
+
+```bash
+# 生成 TTS 音频后，必须执行时长测量
+./scripts/measure-audio.sh > audio-durations.json
+
+# 然后再渲染
+./scripts/render.sh
+```
+
+### 时长配置示例
+
+生成的 `audio-durations.json` 格式：
+```json
+{
+  "intro": 7,
+  "gpt4o": 16,
+  "xai": 15,
+  "google": 15,
+  "moltbot": 11,
+  "datacenter": 16,
+  "outro": 8
+}
+```
+
+> 💡 **提示**：数值单位为秒，已包含 +2 秒缓冲时间，确保语音完整播放。
 
 ---
 

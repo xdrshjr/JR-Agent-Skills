@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Audio, staticFile} from 'remotion';
-import {ImageCard, GradientOverlay, Title, Subtitle, Caption, Paragraph, BulletList, StatBlock, Quote, StaggerContainer, HighlightText} from '../components';
+import {ImageCard, GradientOverlay, Title, Subtitle, Caption, Paragraph, BulletList, StatBlock, Quote, StaggerContainer, HighlightText, SubtitleBar, SubtitleOverlay, generateSubtitles} from '../components';
 
 // 场景数据接口
 interface SceneData {
@@ -45,6 +45,22 @@ interface SceneTemplateProps {
   quote?: { text: string; author?: string };
   stat?: { value: string | number; label: string; suffix?: string };
   highlightKeywords?: string[];
+  // 底部字幕（配音文字）
+  ttsText?: string;
+  // 新增：逐句字幕系统
+  subtitles?: {
+    sentences: string[];
+    mode?: 'word-count' | 'equal';
+    style?: {
+      position?: 'bottom' | 'middle';
+      bgOpacity?: number;
+      fontSize?: number;
+      maxWidth?: string;
+      bottomOffset?: number;
+    };
+  };
+  // 音频时长（用于计算字幕时间轴）
+  durationInSeconds?: number;
 }
 
 export const SceneTemplate: React.FC<SceneTemplateProps> = ({
@@ -62,7 +78,10 @@ export const SceneTemplate: React.FC<SceneTemplateProps> = ({
   bulletPoints: directBulletPoints,
   quote: directQuote,
   stat: directStat,
-  highlightKeywords: directHighlightKeywords
+  highlightKeywords: directHighlightKeywords,
+  ttsText: directTtsText,
+  subtitles,
+  durationInSeconds
 }) => {
   // 合并 sceneData 和直接传入的属性
   const data: Partial<SceneData> = {
@@ -76,6 +95,9 @@ export const SceneTemplate: React.FC<SceneTemplateProps> = ({
     stat: sceneData?.stat || directStat,
     highlightKeywords: sceneData?.highlightKeywords || directHighlightKeywords
   };
+  
+  // 底部字幕文字
+  const subtitleText = directTtsText || sceneData?.content || '';
   
   // 默认布局配置
   const defaultLayouts: Record<string, LayoutConfig> = {
@@ -213,6 +235,16 @@ export const SceneTemplate: React.FC<SceneTemplateProps> = ({
   };
   
   const hasRichContent = data.paragraphs?.length || data.bulletPoints?.length || data.quote || data.stat;
+
+  // 生成逐句字幕（如果配置了）
+  const subtitleSentences = React.useMemo(() => {
+    if (!subtitles?.sentences || !durationInSeconds) return [];
+    return generateSubtitles(
+      subtitles.sentences,
+      durationInSeconds,
+      subtitles.mode || 'word-count'
+    );
+  }, [subtitles, durationInSeconds]);
   
   return (
     <AbsoluteFill style={{backgroundColor: '#0a0a0a'}}>
@@ -319,6 +351,17 @@ export const SceneTemplate: React.FC<SceneTemplateProps> = ({
       
       {/* 音频 */}
       {audioSrc && <Audio src={staticFile(audioSrc)} volume={1} />}
+      
+      {/* 逐句字幕系统（优先）或底部字幕条 */}
+      {subtitleSentences.length > 0 ? (
+        <SubtitleOverlay 
+          subtitles={subtitleSentences} 
+          style={subtitles?.style}
+        />
+      ) : (
+        /* 底部字幕条 - 电影式字幕（兼容旧版） */
+        <SubtitleBar text={subtitleText} />
+      )}
     </AbsoluteFill>
   );
 };
