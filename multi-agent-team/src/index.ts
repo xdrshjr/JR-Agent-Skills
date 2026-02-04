@@ -1,12 +1,18 @@
 /**
  * Multi-Agent Team Skill - Core Logic
- * 
+ *
  * This skill creates a virtual 3-person team to collaboratively complete tasks.
  * You act as the Project Manager who orchestrates the entire process.
  */
 
 import { spawnAgent, sendMessage, collectResponses } from './team';
 import { createProjectState, updateProjectState } from './state';
+
+// Export requirement clarification modules
+export * from './requirement-clarification';
+export * from './clarification-state';
+export * from './confidence-evaluator';
+export * from './question-generator';
 
 // ============================================================================
 // PHASE 1: Task Analysis

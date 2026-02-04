@@ -47,7 +47,7 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 
 ### Execution Flow
 ```
-User Request → PM Analysis → Team Assembly → Task Distribution
+User Request → Requirement Clarification → PM Analysis → Team Assembly → Task Distribution
     ↓
 [Executors Work in Parallel] → Submit to QA
     ↓
@@ -58,6 +58,43 @@ User Request → PM Analysis → Team Assembly → Task Distribution
     ↓
 [QA Report] → [PM Final Acceptance] → Deliver to User
 ```
+
+### Requirement Clarification Phase (NEW - 2026-02-05)
+
+**Problem Solved:** Ensures requirements are well-understood BEFORE creating the multi-agent team, preventing wasted effort and misaligned deliverables.
+
+**Key Features:**
+- **Multi-Round Dialogue**: Minimum 2 rounds, soft maximum 3 rounds
+- **Adaptive Questioning**: 5 questions per round, targeting lowest-confidence dimensions
+- **Confidence-Based Stopping**: Automatically stops when confidence ≥ 75/100
+- **Understanding Summaries**: Shows current understanding before each question round
+- **Enriched Request**: Appends structured clarifications to original request
+
+**Confidence Dimensions** (weighted scoring):
+- **Scope Clarity (25%)**: Goal, boundaries, deliverables defined
+- **Technical Clarity (25%)**: Tech stack, constraints, dependencies clear
+- **Deliverable Clarity (20%)**: Format, structure, acceptance criteria defined
+- **Constraint Clarity (15%)**: Timeline, resources, limitations understood
+- **Context Clarity (15%)**: Background, audience, success metrics clear
+
+**Workflow:**
+1. **Round 1**: Ask 5 initial questions covering all dimensions
+2. **Evaluate Confidence**: Score each dimension (0-100)
+3. **Round 2+**: Ask 5 adaptive questions targeting gaps
+4. **Stop Criteria**: Confidence ≥ 75 AND minimum 2 rounds completed
+5. **Soft Maximum**: After round 3, offer user choice to continue or proceed
+6. **Output**: Enriched request with structured clarifications + Q&A history
+
+**Integration Point**: Between skill planning and team assembly in `pm-workflow.js`
+
+**Benefits:**
+- ✅ Reduces ambiguity before team creation
+- ✅ Prevents misaligned deliverables
+- ✅ Saves time by clarifying upfront
+- ✅ Improves team planning accuracy
+- ✅ Creates audit trail of requirements
+
+**Implementation:** See modules in `src/requirement-clarification.ts`, `src/confidence-evaluator.ts`, `src/question-generator.ts`
 
 ### Agent Lifecycle States
 
@@ -170,8 +207,15 @@ When QA rejects a deliverable:
 - `src/state-validator.ts` (280 lines): **NEW** - Consistency validation and recovery
 - `src/concurrency-manager.ts` (420 lines): **NEW** - Execution slot management and resource control
 
+### Requirement Clarification (NEW - 2026-02-05)
+- `src/requirement-clarification.ts` (300 lines): **NEW** - Main orchestrator for multi-round clarification
+- `src/clarification-state.ts` (150 lines): **NEW** - State management for clarification process
+- `src/confidence-evaluator.ts` (200 lines): **NEW** - Multi-dimensional confidence scoring
+- `src/question-generator.ts` (250 lines): **NEW** - Adaptive question generation targeting gaps
+- `test-clarification.js`: **NEW** - Test suite for clarification system
+
 ### Workflow Scripts
-- `pm-workflow.js` (1468 lines): **UPDATED** - PM coordination logic + approval management + section assignment (now uses state-manager)
+- `pm-workflow.js` (1950+ lines): **UPDATED** - PM coordination logic + approval management + section assignment + requirement clarification (now uses state-manager)
 - `agent-workflow.js` (290 lines): **UPDATED** - Sub-agent autonomous planning workflow with team context awareness
 - `skill-aware-planning.js`: User-specified skill validation (dynamic discovery by agents)
 - `timeout-monitor.js`: **UPDATED** - Timeout detection and recovery (now uses state-manager)
@@ -180,6 +224,7 @@ When QA rejects a deliverable:
 ### Migration & Tools
 - `scripts/migrate-state.js`: **NEW** - Automatic migration tool for existing projects
 - `test-team-context.js`: **NEW** - Test suite for team context awareness and section assignment
+- `test-clarification.js`: **NEW** - Test suite for requirement clarification system
 
 ### Documentation
 - `SKILL.md` (1816 lines): Complete skill specification with all protocols

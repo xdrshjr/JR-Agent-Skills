@@ -19,6 +19,18 @@ try {
   }
 }
 
+// Import requirement clarification system
+let requirementClarification;
+try {
+  requirementClarification = require('./src/requirement-clarification');
+} catch (error) {
+  try {
+    requirementClarification = require('./dist/requirement-clarification');
+  } catch (e) {
+    console.warn('⚠️  Requirement clarification not available, skipping clarification phase');
+  }
+}
+
 // Dynamic project directory resolution (replaces hardcoded PROJECTS_DIR)
 function resolveProjectsDir(explicitDir) {
   if (stateManager && stateManager.resolveProjectsDir) {
@@ -96,16 +108,28 @@ async function initializeProject(userRequest, options = {}) {
 
     console.log(`🚀 初始化项目: ${projectId}`);
 
-    // 1. 技能感知分析
+    // 1. 需求澄清阶段 (Requirement Clarification Phase)
+    // Note: This is a placeholder. Actual clarification should be done by the caller
+    // using conductRequirementClarification() before calling initializeProject()
+    let enrichedRequest = userRequest;
+    let clarificationResult = options.clarificationResult || null;
+
+    // If clarification result is provided, use the enriched request
+    if (clarificationResult && clarificationResult.enrichedRequest) {
+      enrichedRequest = clarificationResult.enrichedRequest;
+      console.log(`✅ 使用已澄清的需求 (${clarificationResult.rounds} 轮, 置信度: ${clarificationResult.finalConfidence}/100)`);
+    }
+
+    // 2. 技能感知分析
     let skillPlanning;
     try {
-      skillPlanning = initializeSkillAwarePlanning(userRequest);
+      skillPlanning = initializeSkillAwarePlanning(enrichedRequest);
     } catch (e) {
       console.error('❌ 技能感知分析失败:', e.message);
       throw new Error(`无法分析技能需求: ${e.message}`);
     }
 
-    // 2. 创建项目目录结构
+    // 3. 创建项目目录结构
     try {
       createProjectStructure(projectDir);
     } catch (e) {
@@ -113,16 +137,22 @@ async function initializeProject(userRequest, options = {}) {
       throw new Error(`无法创建项目目录: ${e.message}`);
     }
 
-    // 3. Use state manager to create project state
+    // 4. Use state manager to create project state
     if (stateManager && stateManager.createProject) {
       try {
-        const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
+        const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis, enrichedRequest);
 
         await stateManager.createProject(projectId, {
           id: projectId,
           status: 'init',
           mode: options.mode || 'FULL_AUTO',
-          userRequest,
+          userRequest: enrichedRequest, // Use enriched request
+          originalRequest: userRequest, // Keep original for reference
+          clarificationData: clarificationResult ? {
+            rounds: clarificationResult.rounds,
+            finalConfidence: clarificationResult.finalConfidence,
+            insights: clarificationResult.insights
+          } : null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           team: teamSuggestion.map(role => ({
@@ -353,7 +383,7 @@ ${generateSkillAssignmentTable(skillPlanning.analysis)}
 /**
  * 生成团队角色建议
  */
-function generateTeamSuggestion(analysis) {
+function generateTeamSuggestion(analysis, userRequest = '') {
   const roles = [];
   
   // 根据检测到的任务类型推荐角色
@@ -1793,6 +1823,87 @@ async function getValidationPlansAwaitingApproval(projectDir) {
   }
 }
 
+/**
+ * Conduct requirement clarification with user
+ * Wrapper function that integrates with AskUserQuestion tool
+ *
+ * @param {string} userRequest - Original user request
+ * @param {Function} askUserQuestionTool - AskUserQuestion tool function
+ * @returns {Promise<object>} Clarification result
+ */
+async function conductRequirementClarification(userRequest, askUserQuestionTool) {
+  if (!requirementClarification || !requirementClarification.clarifyRequirements) {
+    console.warn('⚠️  Requirement clarification module not available');
+    return {
+      enrichedRequest: userRequest,
+      rounds: 0,
+      finalConfidence: 0,
+      insights: { scope: [], technical: [], deliverables: [], constraints: [], context: [] }
+    };
+  }
+
+  try {
+    console.log('💬 开始需求澄清流程...');
+
+    const result = await requirementClarification.clarifyRequirements(userRequest, {
+      minRounds: 2,
+      maxRounds: 3,
+      askUserQuestion: async (questions) => {
+        // Format questions for AskUserQuestion tool
+        const toolQuestions = questions.map((q, index) => ({
+          question: q.text,
+          header: getDimensionLabel(q.dimension),
+          options: [
+            {
+              label: 'Answer',
+              description: 'Provide your answer to this question'
+            }
+          ],
+          multiSelect: false
+        }));
+
+        // Call AskUserQuestion tool
+        const response = await askUserQuestionTool({ questions: toolQuestions });
+
+        // Parse answers from tool response
+        const answers = questions.map((q, index) => ({
+          questionId: q.id,
+          text: response[`question_${index}`] || response[index] || '',
+          timestamp: new Date().toISOString()
+        }));
+
+        return answers;
+      }
+    });
+
+    console.log(`✅ 需求澄清完成: ${result.rounds} 轮, 置信度 ${result.finalConfidence}/100`);
+    return result;
+
+  } catch (error) {
+    console.error('❌ 需求澄清失败:', error.message);
+    return {
+      enrichedRequest: userRequest,
+      rounds: 0,
+      finalConfidence: 0,
+      insights: { scope: [], technical: [], deliverables: [], constraints: [], context: [] }
+    };
+  }
+}
+
+/**
+ * Get human-readable label for confidence dimension
+ */
+function getDimensionLabel(dimension) {
+  const labels = {
+    scope: 'Scope',
+    technical: 'Technical',
+    deliverables: 'Deliverable',
+    constraints: 'Constraints',
+    context: 'Context'
+  };
+  return labels[dimension] || dimension;
+}
+
 // 导出功能
 module.exports = {
   initializeProject,
@@ -1800,6 +1911,9 @@ module.exports = {
   updateAgentStatus,
   logProjectEvent,
   generateTeamSuggestion,
+
+  // 需求澄清相关 (NEW)
+  conductRequirementClarification,
 
   // 超时监控相关
   startPeriodicMonitoring,
