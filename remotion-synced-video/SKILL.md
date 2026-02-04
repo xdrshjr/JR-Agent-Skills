@@ -1,13 +1,44 @@
 ---
 name: remotion-synced-video
-description: Create synchronized videos with Remotion, TTS, and Unsplash images - professional-grade videos with real imagery, perfect audio sync, rich content support and polished visual design.
+description: Create synchronized videos with Remotion, TTS, and real web images - professional-grade videos with real imagery from Google Images, Bing, and Unsplash, perfect audio sync, rich content support and polished visual design.
 metadata:
-  tags: remotion, video, tts, audio-sync, unsplash, images, react, professional, animations
+  tags: remotion, video, tts, audio-sync, google-images, unsplash, images, react, professional, animations, web-crawler
 ---
 
-# Remotion Synced Video with Unsplash
+# Remotion Synced Video with Real Web Images
 
-创建专业级视频，集成真实图片、完美音频同步、丰富内容展示和精美视觉设计。使用 Remotion + TTS + Unsplash，生成具有顶级大厂风格的视频内容。
+创建专业级视频，集成**真实网页图片**（Google Images 爬取）、完美音频同步、丰富内容展示和精美视觉设计。使用 Remotion + TTS + 多源图片搜索，生成具有顶级大厂风格的视频内容。
+
+## 🆕 多源图片搜索（v2.0）
+
+本工具现已集成 **Google Images 网页爬取**，无需 Unsplash API Key 即可获取大量高质量真实图片：
+
+```
+🥇 Python/Google Images → 🥈 Bing Images → 🥉 Unsplash → 🎨 渐变占位图
+```
+
+| 层级 | 来源 | 说明 | 需要配置 |
+|------|------|------|----------|
+| 1 | **Google Images** | Python + Playwright 爬取高清原图 | 无需 API Key |
+| 2 | **Bing Images** | HTTP 解析，快速备选 | 无需 API Key |
+| 3 | **Unsplash** | 高质量摄影图 | 需 `UNSPLASH_ACCESS_KEY` |
+| 4 | **占位图** | 自动生成渐变背景 | 无需配置 |
+
+### 图片搜索使用
+
+```bash
+# 一键搜索所有场景图片
+node scripts/search_images.js scenes.json --output ./public/images
+
+# 输出示例：
+# ✅ 总计: 4 个场景
+#    Google:    3 个  ← 真实网页图片
+#    Bing:      1 个  ← 真实网页图片
+#    Unsplash:  0 个
+#    占位图:    0 个
+```
+
+每个场景将自动获取 1-2 张高清图片，优先使用 Google Images 真实图片。
 
 ## ✨ Features
 
@@ -24,20 +55,46 @@ metadata:
 ## 工作流程
 
 ```
-脚本 → TTS 音频 → 搜索 Unsplash 图片 → 测量时长 → 渲染场景 → 拼接视频
+脚本 → TTS 音频 → 搜索图片 → 测量时长 → 渲染场景 → 拼接视频
 ```
+
+### 多源图片搜索（新）
+
+本工具现在支持多源图片搜索，自动按优先级获取高质量图片：
+
+```
+Google Images → Bing Images → Unsplash → 渐变占位图
+```
+
+- **Google Images**: 首选，爬取高清原图
+- **Bing Images**: 备选，无需 API Key
+- **Unsplash**: 兜底，高质量摄影图（需 API Key）
+- **占位图**: 最终兜底，根据场景主题自动生成渐变色
+
+使用方法：
+```bash
+node scripts/search_images.js scenes.json --output ./public/images
+```
+
+搜索完成后会输出摘要报告，告知每个场景使用的图片来源。
 
 ## 前置要求
 
+### 1. 系统依赖
+
 ```bash
-# 安装 Remotion
+# macOS
+brew install ffmpeg
+
+# Python 3.8+ 和 Playwright（用于 Google Images 爬取）
+pip3 install playwright
+npx playwright install chromium
+```
+
+### 2. Node.js 依赖
+
+```bash
 npm install @remotion/cli remotion react react-dom
-
-# 安装 FFmpeg
-brew install ffmpeg  # macOS
-
-# 安装依赖
-npm install axios
 ```
 
 ## Unsplash API 配置
@@ -67,17 +124,22 @@ my-video/
 │   ├── scenes/
 │   │   └── SceneTemplate.tsx  # 专业风格模板
 │   └── components/
-│       ├── Typography.tsx     # 文字组件（标题、段落、引用等）
+│       ├── Typography.tsx     # 文字组件
 │       ├── ImageCard.tsx      # 图片卡片组件
 │       ├── Animations.tsx     # 动画组件
 │       ├── GradientOverlay.tsx # 渐变遮罩
 │       └── UnsplashImage.tsx  # 图片展示
 ├── scripts/
-│   └── search_images.js       # 图片搜索脚本
+│   ├── search_images.js       # 🔥 多源图片搜索主脚本
+│   ├── generate_placeholder.js # 渐变占位图生成
+│   └── lib/                   # 爬取库
+│       ├── crawl_google_images.py  # Python Google 图片爬取
+│       └── download_images.py      # 图片下载器
 ├── public/
 │   ├── audio/                 # TTS 音频文件
-│   └── images/                # Unsplash 图片
+│   └── images/                # 下载的真实图片
 ├── scenes.json                # 场景配置
+├── image-map.json             # 图片路径映射
 └── package.json
 ```
 
@@ -410,13 +472,14 @@ npm install @remotion/cli remotion react react-dom axios
 
 # 2. 复制 skill 文件
 cp -r ~/clawd/skills/remotion-synced-video/src .
+cp ~/clawd/skills/remotion-synced-video/scripts .
 cp ~/clawd/skills/remotion-synced-video/scenes.json .
 
-# 3. 设置环境变量
+# 3. 可选：设置 Unsplash API Key（用于兜底）
 export UNSPLASH_ACCESS_KEY="your_key_here"
 
-# 4. 搜索图片
-node src/../scripts/search_images.js scenes.json public/images
+# 4. 搜索图片（自动多源搜索）
+node scripts/search_images.js scenes.json --output ./public/images
 
 # 5. 预览
 npx remotion preview src/index.tsx
