@@ -15,6 +15,44 @@ try {
 }
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
+
+// Import state manager for dynamic project directory resolution
+let stateManager: any;
+try {
+  stateManager = require('./state-manager');
+} catch (error) {
+  console.warn('State manager not available, using fallback project directory resolution');
+  stateManager = null;
+}
+
+/**
+ * Resolve projects directory dynamically
+ * Priority: explicit > env var > config file > default
+ */
+function resolveProjectsDir(explicitDir?: string): string {
+  if (stateManager && stateManager.resolveProjectsDir) {
+    return stateManager.resolveProjectsDir(explicitDir);
+  }
+
+  // Fallback logic when state-manager unavailable
+  if (explicitDir) return explicitDir;
+  if (process.env.CLAWD_PROJECTS_DIR) return process.env.CLAWD_PROJECTS_DIR;
+
+  // Try config file
+  try {
+    const configPath = path.join(os.homedir(), '.claude', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.projectsDirectory) return config.projectsDirectory;
+    }
+  } catch (error) {
+    // Ignore config file errors
+  }
+
+  // Last resort: relative path (assumes running from skill directory)
+  return path.join(__dirname, '..', '..', 'projects');
+}
 
 // ============================================================================
 // CONFIGURATION
@@ -824,8 +862,8 @@ async function persistRestartCount(
     // Use timeout-monitor's syncRestartCounter function
     const timeoutMonitor = require('../timeout-monitor');
 
-    // Determine project directory
-    const projectsDir = process.env.CLAWD_PROJECTS_DIR || path.join(__dirname, '..', '..', 'projects');
+    // Determine project directory using dynamic resolution
+    const projectsDir = resolveProjectsDir();
     const projectDir = path.join(projectsDir, projectId);
 
     if (!fs.existsSync(projectDir)) {

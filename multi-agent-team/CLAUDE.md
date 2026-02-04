@@ -46,7 +46,12 @@ User Request → PM Analysis → Team Assembly → Task Distribution
 - **Critical Checkpoint**: Agents CANNOT transition from `awaiting_approval` to `execution` without PM approval
 - Runtime enforcement prevents phase skipping
 
-**Implementation Status**: The phase state machine (`src/phase-state-machine.ts`) defines the 7-phase workflow and provides validation functions. Integration into the main workflow is in progress. Currently, phase transitions are tracked but not strictly enforced at runtime.
+**Implementation Status**: ✅ **FULLY INTEGRATED** - The phase state machine (`src/phase-state-machine.ts`) is actively enforcing workflow integrity:
+- **whiteboard.js:107-166**: Validates and blocks invalid phase transitions when agents update status
+- **pm-workflow.js:701-758**: Enforces approval checkpoint via `approveAgentPlan()` and `rejectAgentPlan()`
+- **src/team.ts:458-479**: Detects agents waiting for approval and warns on message send
+- **Atomic operations**: All phase transitions use file locking for consistency
+- **Error handling**: Invalid transitions throw errors and prevent state corruption
 
 ## Critical Protocols
 
@@ -133,6 +138,7 @@ When QA rejects a deliverable:
 - `src/state-lock.ts` (120 lines): **NEW** - File locking for atomic operations (uses proper-lockfile)
 - `src/state-sync.ts` (200 lines): **NEW** - Automatic synchronization to derived views
 - `src/state-validator.ts` (280 lines): **NEW** - Consistency validation and recovery
+- `src/concurrency-manager.ts` (420 lines): **NEW** - Execution slot management and resource control
 
 ### Workflow Scripts
 - `pm-workflow.js`: **UPDATED** - PM coordination logic + approval management (now uses state-manager)
@@ -145,9 +151,59 @@ When QA rejects a deliverable:
 - `scripts/migrate-state.js`: **NEW** - Automatic migration tool for existing projects
 
 ### Configuration
-- `config/default-roles.yaml`: Default role templates for different task types
+- `config/default-roles.yaml`: Default role templates for different task types (1711 lines, 41 roles, ~60KB)
+  - **Performance**: File read <1ms, no bottleneck detected
+  - **Purpose**: Reference documentation for role definitions (system uses dynamic generation at runtime)
+  - **Structure**: Skill categories, role definitions, team templates
+  - **Decision**: Keeping unified - excellent performance, well-organized, easy to search
+  - **Evaluation**: See `doc/default-roles-evaluation.md` for detailed analysis
 - `tsconfig.json`: **NEW** - TypeScript compiler configuration
 - `package.json`: **UPDATED** - Added proper-lockfile dependency
+
+### TypeScript Migration Strategy
+
+**Current Status**: Hybrid TypeScript/JavaScript codebase (as of 2026-02-04)
+
+**Approach**: Gradual migration with strategic prioritization
+
+**TypeScript Modules** (Core Infrastructure):
+- `src/state-manager.ts` - Unified state management
+- `src/state-lock.ts` - File locking primitives
+- `src/state-sync.ts` - State synchronization
+- `src/state-validator.ts` - Consistency validation
+- `src/phase-state-machine.ts` - Phase transition enforcement
+- `src/qa-queue.ts` - QA validation queue
+- `src/qa-validation-plan.ts` - QA planning logic
+- `src/concurrency-manager.ts` - Concurrency control
+- `src/deliverable.ts` - Deliverable aggregation
+- `src/team.ts` - Team coordination
+- `src/state.ts` - Backward compatibility layer
+- `src/index.ts` - Main entry point
+
+**JavaScript Modules** (Workflow Scripts - Migration Pending):
+- `pm-workflow.js` - PM coordination logic (1268 lines)
+- `agent-workflow.js` - Sub-agent workflow (260 lines)
+- `timeout-monitor.js` - Timeout detection (564 lines)
+- `skill-aware-planning.js` - Skill discovery coordination
+- `whiteboard.js` - Shared communication board
+- `scripts/migrate-state.js` - Migration utility
+- `config/validation-templates/*.js` - QA validation templates (5 files)
+
+**Migration Priority**:
+1. ✅ **Phase 1 Complete**: Core infrastructure (state management, phase machine, QA system)
+2. 🔄 **Phase 2 In Progress**: Workflow orchestration (pm-workflow.js, agent-workflow.js)
+3. ⏳ **Phase 3 Planned**: Utilities and templates (timeout-monitor.js, validation templates)
+
+**Rationale**:
+- **TypeScript first** for new modules requiring type safety (state management, concurrency)
+- **JavaScript retained** for workflow scripts with heavy string templating and dynamic execution
+- **Gradual migration** minimizes disruption while improving type safety incrementally
+
+**For Contributors**:
+- New core modules: Use TypeScript
+- Workflow scripts: JavaScript acceptable, TypeScript preferred
+- Bug fixes: Keep original language unless refactoring
+- When migrating JS→TS: Update imports in dependent modules, add JSDoc types first for easier transition
 
 ### Documentation
 - `SKILL.md` (1816 lines): Complete skill specification with all protocols
@@ -285,13 +341,21 @@ projects/{project-id}/
 3. Config file: `~/.claude/config.json` → `projectsDirectory`
 4. Default: `path.join(process.cwd(), 'projects')`
 
-**Fallback Behavior**:
-When state-manager is unavailable, some modules use hardcoded relative paths:
-- `pm-workflow.js`: `path.join(__dirname, '..', '..', 'projects')`
-- `src/team.ts`: `path.join(__dirname, '..', '..', 'projects')`
-- `src/qa-validation-plan.ts`: `path.join(__dirname, '..', 'config', 'validation-templates')`
+**Improved Robustness** (as of 2026-02-04):
+- `src/team.ts`: Uses `resolveProjectsDir()` helper with full fallback chain
+- `src/qa-validation-plan.ts`: Multi-path template loading (source, dist, env var)
+- `pm-workflow.js`: Uses state-manager's `resolveProjectsDir()` when available
 
-**Limitation**: These fallbacks assume the skill is run from its installation directory. For maximum portability, always set `CLAWD_PROJECTS_DIR` environment variable or configure `~/.claude/config.json`.
+**Environment Variables**:
+- `CLAWD_PROJECTS_DIR`: Override projects directory location
+- `VALIDATION_TEMPLATES_DIR`: Override validation templates location (optional)
+
+**Fallback Behavior**:
+When state-manager is unavailable, modules use intelligent fallbacks:
+- Check environment variables first
+- Try config file (`~/.claude/config.json`)
+- Fall back to relative paths with warnings
+- Provide clear error messages with searched paths
 
 ### Configuration File Format
 
@@ -341,6 +405,53 @@ Create `~/.claude/config.json` to customize project directory:
 - `src/state-sync.ts` - Automatic synchronization to derived views
 - `src/state-validator.ts` - Consistency validation and recovery
 - `src/state.ts` - Backward compatibility layer (delegates to state-manager)
+- `src/concurrency-manager.ts` - Execution slot management and resource control
+
+### Concurrency Management
+
+**Purpose**: Prevents resource exhaustion by limiting concurrent agent execution.
+
+**Key Features**:
+- **Execution Slots**: Maximum 3 concurrent agents by default (configurable)
+- **Wait Queue**: Agents queue when all slots occupied (max 10 waiting)
+- **Automatic Timeout**: Slots auto-released after 30 minutes
+- **Persistent State**: Survives process restarts via `concurrency-state.json`
+- **Dynamic Configuration**: Via env var, config file, or explicit parameters
+
+**Configuration Priority** (highest to lowest):
+1. Explicit function parameter
+2. Environment variable: `MULTI_AGENT_MAX_CONCURRENT`
+3. Config file: `~/.claude/multi-agent-config.json`
+4. Default: 3 concurrent agents
+
+**Usage**:
+```typescript
+import { acquireSlot, releaseSlot, getAvailableSlots } from './src/concurrency-manager';
+
+// Acquire execution slot
+const slot = await acquireSlot(projectDir, 'Frontend Developer', 'agent-001');
+if (!slot) {
+  console.log('Added to wait queue - all slots occupied');
+  return;
+}
+
+try {
+  // Execute agent work
+  await executeAgent();
+} finally {
+  // Always release slot
+  await releaseSlot(projectDir, slot.slotId, 'completed');
+}
+
+// Check availability
+const available = await getAvailableSlots(projectDir);
+console.log(`${available} slots available`);
+```
+
+**Integration Points**:
+- `src/team.ts`: Acquires slots before spawning agents
+- `pm-workflow.js`: Checks availability before task distribution
+- `timeout-monitor.js`: Releases slots on timeout detection
 
 ### Usage
 

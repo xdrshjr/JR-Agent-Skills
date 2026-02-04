@@ -89,17 +89,43 @@ function getValidationPlanPath(projectDir: string, qaAgentRole: string): string 
 /**
  * Load validation template
  *
+ * Attempts to load from multiple locations for portability:
+ * 1. Relative to current module (development/source)
+ * 2. Relative to compiled output (production/dist)
+ * 3. Absolute path from environment variable
+ *
  * @param templateId - Template ID (e.g., 'generic', 'code-validation')
  * @returns Template module
  * @throws Error if template not found
  */
 function loadValidationTemplate(templateId: string): any {
-  try {
-    const templatePath = path.join(__dirname, '..', 'config', 'validation-templates', `${templateId}.js`);
-    return require(templatePath);
-  } catch (err: any) {
-    throw new Error(`Failed to load validation template '${templateId}': ${err.message}`);
+  const possiblePaths = [
+    // 1. Relative to source (development)
+    path.join(__dirname, '..', 'config', 'validation-templates', `${templateId}.js`),
+    // 2. Relative to dist (compiled)
+    path.join(__dirname, '..', '..', 'config', 'validation-templates', `${templateId}.js`),
+    // 3. From environment variable
+    process.env.VALIDATION_TEMPLATES_DIR
+      ? path.join(process.env.VALIDATION_TEMPLATES_DIR, `${templateId}.js`)
+      : null
+  ].filter(Boolean) as string[];
+
+  for (const templatePath of possiblePaths) {
+    try {
+      if (require('fs').existsSync(templatePath)) {
+        return require(templatePath);
+      }
+    } catch (err: any) {
+      // Try next path
+      continue;
+    }
   }
+
+  throw new Error(
+    `Failed to load validation template '${templateId}'. ` +
+    `Searched paths: ${possiblePaths.join(', ')}. ` +
+    `Set VALIDATION_TEMPLATES_DIR environment variable if templates are in a custom location.`
+  );
 }
 
 /**
@@ -110,7 +136,7 @@ function loadValidationTemplate(templateId: string): any {
  * @returns Template ID to use
  */
 function selectValidationTemplate(taskType: string, executorRoles: string[] = []): string {
-  const genericTemplate = require('../config/validation-templates/generic');
+  const genericTemplate = loadValidationTemplate('generic');
   return genericTemplate.selectValidationTemplate(taskType);
 }
 
