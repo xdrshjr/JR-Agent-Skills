@@ -165,13 +165,20 @@ ${agentRole.responsibilities.join('\n')}
 
 **Overall Deliverable:** ${projectBrief.finalDeliverable || 'Multi-part collaborative deliverable'}
 
-${projectBrief.outline ? `**Project Outline:**\n${projectBrief.outline}\n\n` : ''}**Your Assigned Section:**
+${projectBrief.outline ? `**Project Outline:**\n${projectBrief.outline}\n\n` : ''}
+**Your Assigned Section:**
 ${agentRole.assignedSection || agentRole.deliverable}
 
 ⚠️ **IMPORTANT:** You are responsible for ONLY your assigned section. Do not create a complete standalone deliverable. Your work will be integrated with your teammates' contributions.
 
 **Integration Context:**
-- Your section comes ${allRoles.findIndex(r => r.name === agentRole.name) === 0 ? 'at the beginning of the project' : allRoles.findIndex(r => r.name === agentRole.name) === allRoles.length - 1 ? 'at the end of the project' : 'in the middle of the project'}
+${(() => {
+  const agentIndex = allRoles.findIndex(r => r.name === agentRole.name);
+  const position = agentIndex === 0 ? 'at the beginning of the project'
+    : agentIndex === allRoles.length - 1 ? 'at the end of the project'
+    : 'in the middle of the project';
+  return `- Your section comes ${position}`;
+})()}
 - Dependencies: ${agentRole.dependencies && agentRole.dependencies.length > 0 ? agentRole.dependencies.join(', ') : 'None'}
 - Your output will be combined with: ${teammates.map(t => t.name).join(', ')}
 

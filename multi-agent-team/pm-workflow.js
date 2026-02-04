@@ -183,6 +183,18 @@ async function initializeProject(userRequest, options = {}) {
       initializeWhiteboard(projectDir, projectId, projectBrief);
     } catch (e) {
       console.warn('⚠️ 初始化白板失败:', e.message);
+      if (process.env.DEBUG) {
+        console.warn('   Stack:', e.stack);
+      }
+      // Fallback: initialize without projectBrief
+      try {
+        const { initializeWhiteboard } = require('./whiteboard');
+        console.log('   尝试使用基础模式初始化白板...');
+        initializeWhiteboard(projectDir, projectId, null);
+        console.log('   ✅ 基础白板初始化成功');
+      } catch (fallbackError) {
+        console.error('❌ 白板初始化完全失败:', fallbackError.message);
+      }
     }
 
     // 7. 初始化超时监控器（带崩溃恢复）
@@ -414,20 +426,43 @@ function generateTeamSuggestion(analysis) {
 function assignSectionsToRoles(roles, analysis) {
   const taskType = detectTaskType(analysis);
 
+  // Separate QA from executors - QA validates all sections, doesn't own one
+  const executors = roles.filter(r => r.role !== 'QA Reviewer');
+  const qa = roles.find(r => r.role === 'QA Reviewer');
+
+  // Assign sections to executors only
+  let assignedExecutors;
   switch (taskType) {
     case 'document':
-      return assignDocumentSections(roles, analysis);
+      assignedExecutors = assignDocumentSections(executors, analysis);
+      break;
     case 'code':
-      return assignCodeModules(roles, analysis);
+      assignedExecutors = assignCodeModules(executors, analysis);
+      break;
     case 'research':
-      return assignResearchAreas(roles, analysis);
+      assignedExecutors = assignResearchAreas(executors, analysis);
+      break;
     case 'design':
-      return assignDesignComponents(roles, analysis);
+      assignedExecutors = assignDesignComponents(executors, analysis);
+      break;
     case 'video':
-      return assignVideoComponents(roles, analysis);
+      assignedExecutors = assignVideoComponents(executors, analysis);
+      break;
     default:
-      return assignGenericParts(roles, analysis);
+      assignedExecutors = assignGenericParts(executors, analysis);
   }
+
+  // Add QA back with special section indicating they validate all sections
+  if (qa) {
+    assignedExecutors.push({
+      ...qa,
+      assignedSection: 'Quality Assurance & Validation (All Sections)',
+      sectionOrder: 999, // After all executors
+      dependencies: assignedExecutors.map(e => e.role) // Depends on all executors
+    });
+  }
+
+  return assignedExecutors;
 }
 
 /**
@@ -551,16 +586,28 @@ function assignGenericParts(roles, analysis) {
  * Determine code dependencies between roles
  */
 function determineCodeDependencies(role, allRoles) {
-  // Backend typically has no dependencies
-  if (role.role.includes('Backend')) return [];
+  const roleKeywords = {
+    backend: ['backend', 'api', 'server', 'service'],
+    frontend: ['frontend', 'ui', 'client', 'web', 'interface'],
+    database: ['database', 'db', 'data', 'storage']
+  };
+
+  const roleLower = role.role.toLowerCase();
+
+  // Backend has no dependencies
+  if (roleKeywords.backend.some(kw => roleLower.includes(kw))) {
+    return [];
+  }
 
   // Frontend depends on Backend
-  if (role.role.includes('Frontend')) {
-    const backend = allRoles.find(r => r.role.includes('Backend'));
+  if (roleKeywords.frontend.some(kw => roleLower.includes(kw))) {
+    const backend = allRoles.find(r =>
+      roleKeywords.backend.some(kw => r.role.toLowerCase().includes(kw))
+    );
     return backend ? [backend.role] : [];
   }
 
-  // Database typically has no dependencies
+  // Database has no dependencies
   return [];
 }
 
@@ -568,20 +615,39 @@ function determineCodeDependencies(role, allRoles) {
  * Determine design dependencies between roles
  */
 function determineDesignDependencies(role, allRoles) {
+  const roleKeywords = {
+    visual: ['visual', 'graphic', 'brand', 'style'],
+    interaction: ['interaction', 'ux', 'experience', 'flow'],
+    assets: ['asset', 'resource', 'component', 'system']
+  };
+
+  const roleLower = role.role.toLowerCase();
+
   // Visual design comes first
-  if (role.role.includes('Visual')) return [];
+  if (roleKeywords.visual.some(kw => roleLower.includes(kw))) {
+    return [];
+  }
 
   // Interaction design depends on visual design
-  if (role.role.includes('Interaction')) {
-    const visual = allRoles.find(r => r.role.includes('Visual'));
+  if (roleKeywords.interaction.some(kw => roleLower.includes(kw))) {
+    const visual = allRoles.find(r =>
+      roleKeywords.visual.some(kw => r.role.toLowerCase().includes(kw))
+    );
     return visual ? [visual.role] : [];
   }
 
-  // Assets depend on both
-  const deps = allRoles.filter(r =>
-    r.role.includes('Visual') || r.role.includes('Interaction')
-  );
-  return deps.map(d => d.role);
+  // Assets depend on both visual and interaction
+  if (roleKeywords.assets.some(kw => roleLower.includes(kw))) {
+    const deps = allRoles.filter(r => {
+      const rLower = r.role.toLowerCase();
+      return roleKeywords.visual.some(kw => rLower.includes(kw)) ||
+             roleKeywords.interaction.some(kw => rLower.includes(kw));
+    });
+    return deps.map(d => d.role);
+  }
+
+  // Default: no dependencies
+  return [];
 }
 
 /**
