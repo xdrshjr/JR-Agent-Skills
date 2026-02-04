@@ -11,44 +11,204 @@ const path = require('path');
  */
 function generateAutonomousAgentTask(projectInfo, agentRole, agentIndex) {
   const { projectId, skillAnalysis, projectDir, userRequest } = projectInfo;
-  
+
   const { generateTeamSuggestion } = require('./pm-workflow');
   const teamSuggestion = generateTeamSuggestion(skillAnalysis);
   const roleInfo = teamSuggestion[agentIndex];
-  
+
   if (!roleInfo) {
     throw new Error(`未找到角色 ${agentRole} 的信息`);
   }
-  
-  const recommendedSkills = skillAnalysis.recommendations.slice(0, 3);
-  
+
+  // Check if user specified mandatory skills
+  const mandatorySkills = skillAnalysis.userSpecified && !skillAnalysis.userSpecified.error
+    ? [skillAnalysis.userSpecified]
+    : [];
+
+  let mandatorySkillsSection = '';
+  if (mandatorySkills.length > 0) {
+    mandatorySkillsSection = `
+## 必须使用的技能（用户指定）
+${mandatorySkills.map(s => `- **${s.name}**: 用户明确要求使用此技能`).join('\n')}
+`;
+  }
+
   return `你是 ${agentRole}，负责：${roleInfo.responsibility}
 
-⚠️ **必须遵守：规划 → PM审批 → 执行**
+⚠️ **CRITICAL: Phase Transition Enforcement**
 
-## 6步工作流（每步需PM批准）
+Your workflow is monitored by a **phase state machine**. You CANNOT skip phases.
+Attempting to skip from "方案规划" to "执行" without PM approval will be **BLOCKED** by the system.
 
-1️⃣ **需求理解**（10分钟超时）
-   - 理解核心问题，确定成功标准
-   - 汇报：📊 阶段汇报 — 需求理解完成
+## 7-Step Workflow (Strictly Enforced)
 
-2️⃣ **Skill调研**（20分钟超时）
-   - 阅读相关SKILL.md，了解功能/限制
-   - 汇报：📊 阶段汇报 — Skill调研完成
+**Step 0: 技能发现 (5%)** → Report to PM → Wait for confirmation
+**Step 1: 需求理解 (10%)** → Report to PM → Wait for confirmation
+**Step 2: Skill调研 (20%)** → Report to PM → Wait for confirmation
+**Step 3: 方案规划 (30%)** → Report to PM → **MUST WAIT FOR APPROVAL**
+**Step 4: 等待PM批准** → **BLOCKING CHECKPOINT** → Cannot proceed without approval
+**Step 5: 执行 (40%)** → **ONLY AFTER APPROVAL GRANTED**
+**Step 6: 完成** → Submit to QA
 
-3️⃣ **方案规划**（30分钟超时）
-   - 制定详细方案：技能选择 + 具体步骤 + 产出物 + 风险 + 时间
-   - 汇报：📋 方案汇报（必须详细到命令级）
+🚨 **ENFORCEMENT MECHANISM**:
+- Your phase transitions are validated by the system
+- Attempting to skip from "方案规划" to "执行" without approval will be BLOCKED
+- You will receive an error if you try to proceed without approval
+- The system tracks your approval state and will prevent execution
 
-4️⃣ **等待PM批准**（关键！）
-   - 收到"批准"后才能执行
+---
 
-5️⃣ **执行**（按里程碑汇报进度）
+### Step 0: 技能发现 (5分钟超时)
 
-6️⃣ **完成**（提交成果）
+- 使用 find-skills 技能发现可用技能
+- 根据你的角色选择2-3个最匹配的技能
+- 向PM报告你的选择和理由
+- **等待PM批准**
 
-## 推荐技能（先去读文档！）
-${formatSkillsConcise(recommendedSkills)}
+**报告格式：**
+"我发现了 [N] 个可用技能。基于我的角色（${agentRole}），我推荐使用：
+1. [技能名]: [为什么匹配我的角色]
+2. [技能名]: [为什么匹配我的角色]
+
+等待PM批准。"
+
+**更新状态：** stage: "技能发现", progress: 5
+
+---
+
+### Step 1: 需求理解 (10分钟超时)
+
+- 理解核心问题，确定成功标准
+- 汇报：📊 阶段汇报 — 需求理解完成
+
+**更新状态：** stage: "需求理解", progress: 10
+
+---
+
+### Step 2: Skill调研 (20分钟超时)
+
+- 阅读已批准技能的SKILL.md，了解功能/限制
+- 汇报：📊 阶段汇报 — Skill调研完成
+
+**更新状态：** stage: "Skill调研", progress: 20
+
+---
+
+### Step 3: 方案规划 (30分钟超时)
+
+- 制定详细方案：技能选择 + 具体步骤 + 产出物 + 风险 + 时间
+- 汇报：📋 方案汇报（必须详细到命令级）
+
+**更新状态：** stage: "方案规划", progress: 30
+
+---
+
+### Step 4: 等待PM批准 (CRITICAL CHECKPOINT)
+
+**How to Request Approval:**
+1. Complete your plan in Step 3
+2. Report to PM: "方案规划完成，请求批准"
+3. **Update status:** stage: "等待批准", progress: 35
+4. Wait for PM response: "批准执行" or "需要修改"
+5. Only proceed to Step 5 after receiving explicit approval
+
+⚠️ **BLOCKING CHECKPOINT**: The system will prevent you from proceeding to execution without approval.
+
+---
+
+### Step 5: 执行 (按里程碑汇报进度)
+
+**ONLY AFTER APPROVAL GRANTED**
+
+- 使用已批准的技能执行方案
+- 按里程碑汇报进度
+
+**更新状态：** stage: "执行", progress: 40-90
+
+---
+
+### Step 6: 完成 (提交成果给QA)
+
+- 提交成果给QA验证
+- **更新状态：** stage: "完成", progress: 100
+${mandatorySkillsSection}
+
+---
+
+## QA Agent Workflow (Special Instructions)
+
+**If you are the QA Agent**, your workflow is different:
+
+### QA Phase 1: 验证计划创建 (QA_PLANNING)
+
+When you enter QA_PLANNING phase:
+
+1. **Detect Task Type**: Analyze the project to determine task type (code, design, research, document, etc.)
+2. **Select Validation Template**: System will auto-select appropriate template based on task type
+3. **Create Validation Plan**: Follow the template structure to create a comprehensive validation plan
+   - Overview: validation objective, scope, estimated effort
+   - Per-Executor Plans: validation dimensions, methods, acceptance criteria, test cases
+   - Tools and Resources: what you need for validation
+   - Risk Assessment: potential risks and mitigation
+   - Validation Sequence: order of validation with rationale
+4. **Submit Plan to PM**: Report your validation plan and request approval
+5. **Wait for PM Approval**: PM will review using \`approveValidationPlan()\` or \`rejectValidationPlan()\`
+
+**Status Update**: stage: "QA计划", progress: 10
+
+### QA Phase 2: 等待PM批准 (QA_PLANNING)
+
+- Wait for PM to approve or reject your validation plan
+- If rejected: revise plan based on PM feedback and resubmit
+- If approved: proceed to validation execution
+
+**Status Update**: stage: "等待批准", progress: 15
+
+### QA Phase 3: 执行验证 (QA_VALIDATING)
+
+**ONLY AFTER PM APPROVES YOUR VALIDATION PLAN**
+
+- Execute validation following your approved plan
+- Validate each executor's deliverables systematically
+- Use validation methods specified in your plan
+- Document findings for each validation dimension
+- Track pass/fail for each acceptance criterion
+
+**Status Update**: stage: "QA验证中", progress: 20-90
+
+### QA Phase 4: 报告结果 (QA_COMPLETED)
+
+- Compile validation results
+- Report pass/fail for each executor
+- Provide specific feedback for failed items
+- Submit final QA report to PM
+
+**Status Update**: stage: "QA完成", progress: 100
+
+**QA Critical Rules**:
+- ❌ DO NOT start validation without PM-approved plan
+- ❌ DO NOT skip validation plan creation
+- ✅ MUST create detailed validation plan first
+- ✅ MUST wait for PM approval before validating
+- ✅ MUST be objective and thorough in validation
+
+---
+
+## Pattern Detection
+
+The system detects phase transitions by monitoring your stage updates:
+- "技能发现" → skill_discovery phase
+- "需求理解" → requirement phase
+- "Skill调研" → skill_research phase
+- "方案规划" → plan_design phase
+- "等待批准" → awaiting_approval phase (REQUIRES APPROVAL)
+- "执行" → execution phase (BLOCKED WITHOUT APPROVAL)
+- "完成" → completion phase
+
+**Critical**: When you update your status to "执行", the system will check if PM approval was granted.
+If not, your status update will be REJECTED with an error.
+
+---
 
 ## 查看白板状态
 执行: read ${projectDir}/WHITEBOARD.md
@@ -57,10 +217,29 @@ ${formatSkillsConcise(recommendedSkills)}
 - 路径: ${projectDir}
 - 用户请求: ${userRequest.substring(0, 100)}...
 
-❌ 禁止：擅自执行、不读文档、跳过规划、硬试>2次
-✅ 必须：每步汇报、方案具体、不确定就问
+---
 
-👉 现在：开始第1步，完成后汇报PM`;
+## Rules
+
+❌ **禁止**：
+- 擅自执行（未经PM批准）
+- 不读文档
+- 跳过规划
+- 硬试>2次
+- 跳过技能发现
+- 从"方案规划"直接跳到"执行"
+
+✅ **必须**：
+- 每步汇报
+- 方案具体
+- 不确定就问
+- 先发现技能再规划
+- 规划完成后请求批准
+- 收到批准后才能执行
+
+---
+
+👉 **现在：开始第0步（技能发现），完成后汇报PM**`;
 }
 
 /**
@@ -107,6 +286,36 @@ ${agentProposal}
 
 4. 🔄 **重新规划** - 方向有误
    回复: "重新规划，注意：xxx"
+
+═══════════════════════════════════════════════════════════
+`;
+}
+
+/**
+ * 生成 QA 验证计划审批检查清单
+ */
+function generateQAValidationPlanChecklist(qaAgentRole, validationPlan) {
+  return `
+═══════════════════════════════════════════════════════════
+📋 PM 审批检查清单 —— ${qaAgentRole} 的验证计划
+═══════════════════════════════════════════════════════════
+
+【验证计划内容】
+${JSON.stringify(validationPlan, null, 2)}
+
+【PM 检查项】
+□ 完整性: 是否覆盖所有执行者和交付物？
+□ 适当性: 验证方法是否适合任务类型？
+□ 清晰性: 验收标准是否具体可衡量？
+□ 可行性: 计划是否现实可执行？
+□ 资源: 所需工具和资源是否可用？
+
+【审批选项】
+1. ✅ **批准** - 按计划验证
+   使用: approveValidationPlan(projectDir, '${qaAgentRole}', 'PM-ID')
+
+2. ❌ **拒绝** - 需要修改
+   使用: rejectValidationPlan(projectDir, '${qaAgentRole}', '原因', 'PM-ID')
 
 ═══════════════════════════════════════════════════════════
 `;
@@ -208,6 +417,7 @@ module.exports = {
   generateAutonomousAgentTask,
   formatSkillsConcise,
   generatePMApprovalChecklist,
+  generateQAValidationPlanChecklist,
   generateAgentStageReportTemplate
 };
 

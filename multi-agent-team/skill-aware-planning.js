@@ -1,245 +1,161 @@
 /**
  * Skill-Aware Planning Module
  * 集成到 PM 规划流程中的 skill 感知模块
+ *
+ * NOTE: This module now focuses on user-specified skills only.
+ * Agents discover and select their own skills dynamically at runtime.
  */
 
-const { loadSkillIndex, matchSkillsForTask, parseUserSpecifiedSkill } = require('./skill-discovery/scan-skills');
+/**
+ * 解析用户指定的 skill（支持多个）
+ * 支持中英文多种表达方式：
+ * - "使用 nano-banana-pro 技能"
+ * - "用 skill-a 和 skill-b 来做"
+ * - "use skill-name skill"
+ */
+function parseUserSpecifiedSkill(userRequest) {
+  const patterns = [
+    /使用\s*([\w-]+(?:\s*(?:和|与|,|、)\s*[\w-]+)*)\s*(?:技能|skill)/i,
+    /用\s*([\w-]+(?:\s*(?:和|与|,|、)\s*[\w-]+)*)\s*(?:来|做|执行)/i,
+    /调用\s*([\w-]+(?:\s*(?:和|与|,|、)\s*[\w-]+)*)/i,
+    /基于\s*([\w-]+(?:\s*(?:和|与|,|、)\s*[\w-]+)*)/i,
+    /use\s+([\w-]+(?:\s*(?:and|&,|,)\s*[\w-]+)*)\s+skill/i,
+    /using\s+([\w-]+(?:\s*(?:and|&,|,)\s*[\w-]+)*)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = userRequest.match(pattern);
+    if (match) {
+      // 分割多个skill
+      const skills = match[1]
+        .split(/\s*(?:和|与|,|、|and|&)\s*/i)
+        .map(s => s.trim().toLowerCase())
+        .filter(s => s.length > 0);
+      return skills.length === 1 ? skills[0] : skills;
+    }
+  }
+
+  return null;
+}
 
 /**
  * 分析用户请求，提取技能需求
+ * 只检查用户明确指定的技能，不再做自动推荐
  */
 function analyzeSkillRequirements(userRequest) {
-  // 1. 加载技能索引
-  const skillIndex = loadSkillIndex();
-  
-  // 2. 检查用户是否指定了特定 skill
+  // 检查用户是否指定了特定 skill（例如："使用 nano-banana-pro 技能"）
   const userSpecifiedSkill = parseUserSpecifiedSkill(userRequest);
-  
-  // 3. 基于任务类型匹配合适的 skills
-  const matchResult = matchSkillsForTask(userRequest, skillIndex);
-  
-  // 4. 如果用户指定了 skill，验证它是否匹配
+
+  // 如果用户指定了 skill，验证它是否存在
   let validatedUserSkill = null;
   if (userSpecifiedSkill) {
-    const found = skillIndex.skills.find(s => 
-      s.name.toLowerCase() === userSpecifiedSkill.toLowerCase()
-    );
-    
-    if (found) {
-      // 检查是否适合任务类型
-      const isRecommended = matchResult.recommendations.some(r => r.name === found.name);
-      validatedUserSkill = {
-        ...found,
-        isRecommended,
-        warning: isRecommended ? null : `指定的 skill "${found.name}" 可能不完全适合当前任务类型（${matchResult.detectedTypes.join(', ')}）`
-      };
-    } else {
-      validatedUserSkill = {
-        name: userSpecifiedSkill,
-        error: `Skill "${userSpecifiedSkill}" 未找到，请检查拼写或确认已安装`
-      };
-    }
+    // Note: Validation will be done by agents using find-skills at runtime
+    // We just mark it as mandatory here
+    validatedUserSkill = {
+      name: userSpecifiedSkill,
+      mandatory: true,
+      note: 'Agent will validate availability using find-skills'
+    };
   }
-  
+
   return {
-    detectedTypes: matchResult.detectedTypes,
     userSpecified: validatedUserSkill,
-    recommendations: matchResult.recommendations,
-    allAvailableSkills: skillIndex.skills.map(s => s.name)
+    // Removed: detectedTypes, recommendations, allAvailableSkills
+    // Agents will discover these themselves using find-skills
   };
 }
 
 /**
  * 生成技能使用规划文档
+ * 简化版：只显示用户指定的技能，其他由agents自己发现
  */
 function generateSkillPlanningDoc(skillAnalysis) {
   let doc = `## Skill 使用规划\n\n`;
-  
+
   // 用户指定的 skill
   if (skillAnalysis.userSpecified) {
-    doc += `### 用户指定\n`;
-    if (skillAnalysis.userSpecified.error) {
-      doc += `- ⚠️ 错误: ${skillAnalysis.userSpecified.error}\n`;
-    } else {
-      doc += `- **Skill**: ${skillAnalysis.userSpecified.name}\n`;
-      doc += `- **功能**: ${skillAnalysis.userSpecified.description}\n`;
-      if (skillAnalysis.userSpecified.warning) {
-        doc += `- ⚠️ **注意**: ${skillAnalysis.userSpecified.warning}\n`;
-      }
-    }
-    doc += `\n`;
+    doc += `### 用户指定（必须使用）\n`;
+    doc += `- **Skill**: ${skillAnalysis.userSpecified.name}\n`;
+    doc += `- **状态**: 必须使用（mandatory）\n`;
+    doc += `- **验证**: Agents将在运行时使用 find-skills 验证可用性\n\n`;
+  } else {
+    doc += `### 技能发现\n`;
+    doc += `- 没有用户指定的技能\n`;
+    doc += `- 各 Agent 将在运行时自主发现和选择适合其角色的技能\n`;
+    doc += `- 使用 find-skills 技能进行动态发现\n\n`;
   }
-  
-  // 检测到的任务类型
-  if (skillAnalysis.detectedTypes.length > 0) {
-    doc += `### 任务类型\n`;
-    doc += skillAnalysis.detectedTypes.map(t => `- ${t}`).join('\n');
-    doc += `\n\n`;
-  }
-  
-  // PM 推荐的 skills
-  if (skillAnalysis.recommendations.length > 0) {
-    doc += `### PM 推荐\n`;
-    doc += `| Skill | 功能 | 匹配度 | 优先级 |\n`;
-    doc += `|-------|------|--------|--------|\n`;
-    
-    for (const skill of skillAnalysis.recommendations) {
-      const matchPercent = Math.min(100, Math.round(skill.matchScore * 3));
-      doc += `| ${skill.name} | ${skill.description.substring(0, 40)}... | ${matchPercent}% | ${skill.priority} |\n`;
-    }
-    doc += `\n`;
-  }
-  
-  // 备选 skills
-  const otherSkills = skillAnalysis.allAvailableSkills
-    .filter(name => !skillAnalysis.recommendations.some(r => r.name === name))
-    .filter(name => !skillAnalysis.userSpecified || name !== skillAnalysis.userSpecified.name)
-    .slice(0, 10);
-  
-  if (otherSkills.length > 0) {
-    doc += `### 其他可用 Skills\n`;
-    doc += otherSkills.map(s => `- ${s}`).join('\n');
-    doc += `\n`;
-  }
-  
+
   return doc;
 }
 
 /**
- * 为子智能体生成技能使用指南
+ * DEPRECATED: 为子智能体生成技能使用指南
+ *
+ * This function is deprecated. Agents now discover skills dynamically
+ * using find-skills at runtime instead of receiving pre-assigned skills.
  */
 function generateAgentSkillGuide(agentRole, assignedSkills) {
-  let guide = `\n═══════════════════════════════════════════════════════════\n`;
-  guide += `🛠️ 可用工具与技能\n`;
-  guide += `═══════════════════════════════════════════════════════════\n\n`;
-  
-  if (!assignedSkills || assignedSkills.length === 0) {
-    guide += `本任务没有预设的 skills。\n`;
-    guide += `如果执行过程中需要使用特定工具，请向 PM 申请。\n\n`;
-  } else {
-    guide += `本任务可以使用以下 skills:\n\n`;
-    
-    for (const skill of assignedSkills) {
-      guide += `【Skill: ${skill.name}】\n`;
-      guide += `• 功能: ${skill.description}\n`;
-      guide += `• 位置: ${skill.location}\n`;
-      
-      if (skill.capabilities && skill.capabilities.length > 0) {
-        guide += `• 能力: ${skill.capabilities.join(', ')}\n`;
-      }
-      
-      guide += `• 使用方法: 读取 SKILL.md 文件获取详细用法\n`;
-      guide += `   执行: read ${skill.location}/SKILL.md\n`;
-      
-      guide += `\n`;
-    }
-    
-    guide += `⚠️ 重要提示:\n`;
-    guide += `1. 在执行任务前，先检查是否有可用的 skill\n`;
-    guide += `2. 优先使用 skill 而不是手动实现\n`;
-    guide += `3. 如果 skill 不能满足需求，立即向 PM 汇报\n`;
-    guide += `4. 不确定如何使用 skill 时，先阅读 SKILL.md\n`;
-  }
-  
-  guide += `═══════════════════════════════════════════════════════════\n`;
-  
-  return guide;
+  // Deprecated - kept for backward compatibility
+  return `\n⚠️ 注意: 静态技能分配已弃用\n请使用 find-skills 技能动态发现可用技能\n\n`;
 }
 
 /**
- * 为任务分配 skills
+ * DEPRECATED: 为任务分配 skills
+ *
+ * This function is deprecated. Agents now discover and select their own
+ * skills dynamically at runtime based on their role and the task requirements.
  */
 function assignSkillsToAgents(agentRoles, skillAnalysis) {
+  // Deprecated - return empty assignments
+  // Agents will discover skills themselves
   const assignments = {};
-  
-  // 优先使用用户指定的 skill
-  const mandatorySkills = skillAnalysis.userSpecified && !skillAnalysis.userSpecified.error 
-    ? [skillAnalysis.userSpecified] 
-    : [];
-  
-  // 获取推荐的 skills
-  const recommendedSkills = skillAnalysis.recommendations;
-  
-  // 根据角色分配 skills
   for (const role of agentRoles) {
-    const roleLower = role.toLowerCase();
-    const assigned = [];
-    
-    // 检查角色与技能的匹配
-    for (const skill of [...mandatorySkills, ...recommendedSkills]) {
-      // 基于角色关键词匹配
-      const isMatch = (
-        (roleLower.includes('video') && skill.capabilities.some(c => c.includes('video'))) ||
-        (roleLower.includes('image') || roleLower.includes('design')) && skill.capabilities.some(c => c.includes('image')) ||
-        (roleLower.includes('audio') || roleLower.includes('voice')) && skill.capabilities.some(c => c.includes('audio') || c.includes('tts')) ||
-        (roleLower.includes('research') || roleLower.includes('analyst')) && skill.capabilities.some(c => c.includes('research') || c.includes('web-search')) ||
-        (roleLower.includes('document') || roleLower.includes('writer')) && skill.capabilities.some(c => c.includes('document') || c.includes('pdf'))
-      );
-      
-      if (isMatch && !assigned.some(s => s.name === skill.name)) {
-        assigned.push(skill);
-      }
-    }
-    
-    // 限制每个角色最多 3 个 skills
-    assignments[role] = assigned.slice(0, 3);
+    assignments[role] = [];
   }
-  
   return assignments;
 }
 
 /**
- * 生成增强版任务分配 prompt
+ * DEPRECATED: 生成增强版任务分配 prompt
+ *
+ * This function is deprecated. Task prompts are now generated without
+ * pre-assigned skills. Agents discover skills dynamically at runtime.
  */
 function generateEnhancedTaskPrompt(agentRole, taskDescription, skillAssignments) {
-  const skills = skillAssignments[agentRole] || [];
-  const skillGuide = generateAgentSkillGuide(agentRole, skills);
-  
+  // Deprecated - return basic prompt without skill assignments
   const prompt = `你是一个${agentRole}，负责以下任务：
 
 ${taskDescription}
 
-${skillGuide}
-
-═══════════════════════════════════════════════════════════
-任务执行要求
-═══════════════════════════════════════════════════════════
-
-1. 在开始前，阅读可用的 SKILL.md 文件了解工具用法
-2. 优先使用已分配的 skills 完成任务
-3. 定期向 PM 汇报进度
-4. 遇到无法解决的问题立即上报，不要自行尝试超过2次
-
-请开始执行任务。`;
+⚠️ 技能发现：
+在开始规划前，请使用 find-skills 技能发现你环境中可用的所有技能，
+然后选择最适合你角色的技能，并向 PM 报告等待批准。
+`;
 
   return prompt;
 }
 
 /**
  * 主函数：集成到 PM 初始化流程
+ * 简化版：只处理用户指定的技能
  */
 function initializeSkillAwarePlanning(userRequest) {
   console.log('🔍 分析任务技能需求...');
-  
+
   const analysis = analyzeSkillRequirements(userRequest);
-  
+
   // 生成规划文档
   const planningDoc = generateSkillPlanningDoc(analysis);
-  
+
   console.log('✅ 技能分析完成');
   if (analysis.userSpecified) {
-    if (analysis.userSpecified.error) {
-      console.log(`⚠️ 用户指定的 skill 有问题: ${analysis.userSpecified.error}`);
-    } else {
-      console.log(`📌 用户指定使用: ${analysis.userSpecified.name}`);
-      if (analysis.userSpecified.warning) {
-        console.log(`⚠️ ${analysis.userSpecified.warning}`);
-      }
-    }
+    console.log(`📌 用户指定使用: ${analysis.userSpecified.name} (mandatory)`);
+    console.log(`   Agents将在运行时验证可用性`);
+  } else {
+    console.log(`💡 没有用户指定的技能`);
+    console.log(`   Agents将自主发现和选择适合其角色的技能`);
   }
-  console.log(`📊 检测到任务类型: ${analysis.detectedTypes.join(', ')}`);
-  console.log(`💡 推荐 skills: ${analysis.recommendations.slice(0, 3).map(r => r.name).join(', ')}`);
-  
+
   return {
     analysis,
     planningDoc,

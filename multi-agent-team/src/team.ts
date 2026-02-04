@@ -5,6 +5,17 @@
 
 import { sessions_spawn, sessions_send, sessions_list } from '../utils/moltbot-api';
 
+// Import phase state machine for validation
+let phaseStateMachine: any;
+try {
+  phaseStateMachine = require('./phase-state-machine');
+} catch (error) {
+  console.warn('Phase state machine not available, phase validation disabled');
+  phaseStateMachine = null;
+}
+import * as fs from 'fs';
+import * as path from 'path';
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -91,33 +102,83 @@ export async function spawnTeamAgents(
 function buildAgentSystemPrompt(
   agentRole: Role,
   allRoles: Role[],
-  projectBrief: ProjectBrief
+  projectBrief: ProjectBrief,
+  enableSkillDiscovery: boolean = true
 ): string {
   const teammates = allRoles.filter(r => r.name !== agentRole.name);
-  
+
   return `
 You are ${agentRole.name} on a 3-person project team managed by a Project Manager (PM).
 
 ## Your Identity
 
-**Role:** ${agentRole.name}  
-**Expertise:** ${agentRole.expertise}  
+**Role:** ${agentRole.name}
+**Expertise:** ${agentRole.expertise}
 **Current Project:** ${projectBrief.description}
 
 ## Your Task
 
 ${agentRole.responsibilities.join('\n')}
 
-**Deliverable:** ${agentRole.deliverable}  
+**Deliverable:** ${agentRole.deliverable}
 **Timeline:** 30 minutes
 
 ## Your Teammates
 
-1. **${teammates[0].name}**  
+1. **${teammates[0].name}**
    Handles: ${teammates[0].responsibilities.slice(0, 2).join(', ')}
 
-2. **${teammates[1].name}**  
+2. **${teammates[1].name}**
    Handles: ${teammates[1].responsibilities.slice(0, 2).join(', ')}
+
+${enableSkillDiscovery ? `
+## Skill Discovery (Phase 0 - Before Planning)
+
+Before you start planning, you MUST discover what skills are available in your environment.
+
+**How to discover skills:**
+1. Use the Skill tool with \`skill: "find-skills"\` to discover available skills
+2. Review the list of available skills and their capabilities
+3. Select 2-3 skills that match your role and expertise
+4. Report your selection to PM with justification
+5. Wait for PM approval before proceeding
+
+**Your Role:** ${agentRole.name}
+**Your Expertise:** ${agentRole.expertise}
+
+**Selection Criteria:**
+- Choose skills that align with your responsibilities
+- Prioritize skills you're most qualified to use
+- Consider the project requirements: ${projectBrief.description}
+
+**Report Format:**
+"I've discovered [N] available skills. Based on my role as ${agentRole.name}, I recommend using:
+1. [skill-name]: [why it matches my role]
+2. [skill-name]: [why it matches my role]
+
+Awaiting PM approval to proceed."
+
+` : ''}
+## Your Workflow
+
+${enableSkillDiscovery ? `**Phase 0: Skill Discovery (5 minutes)**
+- Discover available skills using find-skills
+- Select skills matching your role
+- Report to PM and wait for approval
+
+` : ''}**Phase 1: Understand Requirements (10 minutes)**
+- Analyze your assigned task
+- Ask clarifying questions if needed
+- Report understanding to PM
+
+**Phase 2: Plan Approach (15 minutes)**
+- Design your implementation plan${enableSkillDiscovery ? '\n- Include selected skills in your plan' : ''}
+- Submit plan to PM for approval
+
+**Phase 3: Execute (Remaining time)**
+- Execute approved plan${enableSkillDiscovery ? ' with approved skills' : ''}
+- Report progress at milestones
+- Submit deliverable to QA
 
 ## Communication Rules
 
@@ -150,16 +211,18 @@ Start by confirming you understand your assignment. Wait for kickoff signal from
 
 /**
  * Send kickoff message to all agents
+ *
+ * NEW: Phase state awareness
  */
 export async function conductKickoffMeeting(
   agents: AgentSession[],
   projectBrief: ProjectBrief
 ): Promise<void> {
   const kickoffMessage = buildKickoffMessage(agents, projectBrief);
-  
+
   // Send to all agents simultaneously
   await Promise.all(
-    agents.map(agent => 
+    agents.map(agent =>
       sessions_send({
         sessionKey: agent.sessionKey,
         message: kickoffMessage
@@ -358,6 +421,8 @@ export async function requestDeliverable(
 
 /**
  * Send review feedback to agent
+ *
+ * NEW: Phase state awareness for approval messages
  */
 export async function sendReviewFeedback(
   agent: AgentSession,
@@ -377,6 +442,46 @@ export async function sendReviewFeedback(
       message: `❌ REWORK REQUIRED (Attempt ${agent.reworkCount}/3)\n\nFeedback:\n${feedback}\n\nPlease address and resubmit.`
     });
   }
+}
+
+/**
+ * Send message to agent with phase validation
+ *
+ * NEW: Helper function to send messages with phase state awareness
+ */
+export async function sendMessageToAgent(
+  agent: AgentSession,
+  message: string,
+  projectDir?: string
+): Promise<void> {
+  // NEW: Check if agent is blocked waiting for approval
+  if (phaseStateMachine && projectDir && agent.role) {
+    try {
+      const phaseState = phaseStateMachine.getPhaseState(projectDir, agent.role);
+
+      if (phaseState && phaseState.currentPhase === 'awaiting_approval') {
+        // Check if message contains approval
+        const isApprovalMessage = message.includes('批准') ||
+                                 message.includes('approve') ||
+                                 message.includes('批准执行') ||
+                                 message.includes('approved');
+
+        if (isApprovalMessage) {
+          console.log(`✅ Approval message detected for ${agent.role}`);
+        } else {
+          console.warn(`⚠️ ${agent.role} is waiting for approval, message may be blocked`);
+        }
+      }
+    } catch (error) {
+      // Log error but continue with message send
+      console.error(`Phase validation error: ${error}`);
+    }
+  }
+
+  await sessions_send({
+    sessionKey: agent.sessionKey,
+    message: message
+  });
 }
 
 /**
@@ -643,14 +748,17 @@ async function restartAgentWithGuidance(
   projectId: string
 ): Promise<boolean> {
   console.log(`[PM] 🔄 Restarting ${agent.role} with guidance...`);
-  
+
   agent.status = 'restarting';
   agent.restartCount++;
+
+  // Persist restart count to agent-status.json
+  await persistRestartCount(projectId, agent.id, agent.restartCount);
 
   try {
     // Determine task for restart
     const restartTask = analysis.adjustedTask || agent.originalTask;
-    
+
     if (!restartTask) {
       throw new Error('No task available for restart');
     }
@@ -700,6 +808,38 @@ Reply "Restart confirmed" when you're ready to begin.
     console.error(`[PM] ❌ Failed to restart ${agent.role}:`, error);
     agent.status = 'failed';
     return false;
+  }
+}
+
+/**
+ * Persist restart count to agent-status.json
+ * Integrates with timeout-monitor.js state persistence
+ */
+async function persistRestartCount(
+  projectId: string,
+  agentId: string,
+  restartCount: number
+): Promise<void> {
+  try {
+    // Use timeout-monitor's syncRestartCounter function
+    const timeoutMonitor = require('../timeout-monitor');
+
+    // Determine project directory
+    const projectsDir = process.env.CLAWD_PROJECTS_DIR || path.join(__dirname, '..', '..', 'projects');
+    const projectDir = path.join(projectsDir, projectId);
+
+    if (!fs.existsSync(projectDir)) {
+      console.warn(`⚠️ Project directory not found: ${projectDir}`);
+      return;
+    }
+
+    // Sync restart counter via timeout-monitor
+    timeoutMonitor.syncRestartCounter(projectDir, agentId, restartCount);
+
+    console.log(`✅ Persisted restart count for ${agentId}: ${restartCount}`);
+  } catch (error) {
+    console.error(`❌ Failed to persist restart count: ${error}`);
+    // Don't throw - this is a non-critical operation
   }
 }
 

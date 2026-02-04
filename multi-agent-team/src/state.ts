@@ -1,15 +1,33 @@
 /**
- * State Management Module
- * Projects are tracked in Markdown files for transparency
+ * State Management Module - Backward Compatibility Layer
+ * This module maintains the existing API while delegating to the unified state manager
  */
 
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import * as stateManager from './state-manager';
 
-const PROJECTS_DIR = './projects';
+// ============================================================================
+// Dynamic Project Directory Resolution (replaces hardcoded PROJECTS_DIR)
+// ============================================================================
 
-interface ProjectState {
+/**
+ * Resolve the projects directory with priority:
+ * 1. Explicit parameter (highest priority)
+ * 2. Environment variable: CLAWD_PROJECTS_DIR
+ * 3. Config file: ~/.claude/config.json -> projectsDirectory
+ * 4. Default: {cwd}/projects (lowest priority)
+ */
+export function resolveProjectsDir(explicitDir?: string): string {
+  return stateManager.resolveProjectsDir(explicitDir);
+}
+
+// ============================================================================
+// Type Exports (for backward compatibility)
+// ============================================================================
+
+export interface ProjectState {
   id: string;
   status: 'init' | 'executing' | 'reviewing' | 'completed' | 'failed' | 'terminated';
   mode: 'FULL_AUTO' | 'SUPERVISED';
@@ -22,7 +40,7 @@ interface ProjectState {
   logs: LogEntry[];
 }
 
-interface TeamMember {
+export interface TeamMember {
   role: string;
   agentId: string;
   status: 'active' | 'blocked' | 'completed' | 'failed';
@@ -30,14 +48,14 @@ interface TeamMember {
   reworkCount: number;
 }
 
-interface Milestone {
+export interface Milestone {
   name: string;
   status: 'pending' | 'in-progress' | 'completed';
   userConfirmed?: boolean;
   timestamp?: Date;
 }
 
-interface DisputeEntry {
+export interface DisputeEntry {
   id: string;
   agents: string[];
   topic: string;
@@ -46,12 +64,77 @@ interface DisputeEntry {
   timestamp: Date;
 }
 
-interface LogEntry {
+export interface LogEntry {
   timestamp: Date;
   phase: string;
   event: string;
   details?: string;
 }
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Convert state manager format to legacy format (Date objects instead of ISO strings)
+ */
+function toLegacyFormat(state: stateManager.ProjectState): ProjectState {
+  return {
+    ...state,
+    createdAt: new Date(state.createdAt),
+    updatedAt: new Date(state.updatedAt),
+    milestones: state.milestones.map(m => ({
+      ...m,
+      timestamp: m.timestamp ? new Date(m.timestamp) : undefined,
+    })),
+    disputes: state.disputes.map(d => ({
+      ...d,
+      timestamp: new Date(d.timestamp),
+    })),
+    logs: state.logs.map(l => ({
+      ...l,
+      timestamp: new Date(l.timestamp),
+    })),
+  } as ProjectState;
+}
+
+/**
+ * Convert legacy format to state manager format (ISO strings instead of Date objects)
+ */
+function toStateManagerFormat(state: Partial<ProjectState>): Partial<stateManager.ProjectState> {
+  const converted: any = { ...state };
+
+  if (state.createdAt instanceof Date) {
+    converted.createdAt = state.createdAt.toISOString();
+  }
+  if (state.updatedAt instanceof Date) {
+    converted.updatedAt = state.updatedAt.toISOString();
+  }
+  if (state.milestones) {
+    converted.milestones = state.milestones.map(m => ({
+      ...m,
+      timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+    }));
+  }
+  if (state.disputes) {
+    converted.disputes = state.disputes.map(d => ({
+      ...d,
+      timestamp: d.timestamp instanceof Date ? d.timestamp.toISOString() : d.timestamp,
+    }));
+  }
+  if (state.logs) {
+    converted.logs = state.logs.map(l => ({
+      ...l,
+      timestamp: l.timestamp instanceof Date ? l.timestamp.toISOString() : l.timestamp,
+    }));
+  }
+
+  return converted;
+}
+
+// ============================================================================
+// Public API (delegates to state-manager)
+// ============================================================================
 
 /**
  * Create a new project state file
@@ -60,39 +143,35 @@ export async function createProjectState(
   projectId: string,
   userRequest: string,
   mode: 'FULL_AUTO' | 'SUPERVISED',
-  team: TeamMember[]
+  team: TeamMember[],
+  projectsDir?: string
 ): Promise<void> {
-  // Ensure projects directory exists
-  if (!existsSync(PROJECTS_DIR)) {
-    await mkdir(PROJECTS_DIR, { recursive: true });
-  }
-  
   const now = new Date();
-  const state: ProjectState = {
+  const initialState: Partial<stateManager.ProjectState> = {
     id: projectId,
     status: 'init',
     mode,
     userRequest,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
     team,
     milestones: initializeMilestones(mode),
     disputes: [],
     logs: [{
-      timestamp: now,
+      timestamp: now.toISOString(),
       phase: 'init',
       event: 'Project created',
       details: `Mode: ${mode}, Team: ${team.map(t => t.role).join(', ')}`
     }]
   };
-  
-  await writeMarkdownFile(projectId, state);
+
+  await stateManager.createProject(projectId, initialState, projectsDir);
 }
 
 /**
  * Initialize milestones based on mode
  */
-function initializeMilestones(mode: 'FULL_AUTO' | 'SUPERVISED'): Milestone[] {
+function initializeMilestones(mode: 'FULL_AUTO' | 'SUPERVISED'): stateManager.Milestone[] {
   if (mode === 'FULL_AUTO') {
     return [
       { name: 'Kickoff', status: 'pending' },
@@ -115,16 +194,11 @@ function initializeMilestones(mode: 'FULL_AUTO' | 'SUPERVISED'): Milestone[] {
  */
 export async function updateProjectState(
   projectId: string,
-  updates: Partial<ProjectState>
+  updates: Partial<ProjectState>,
+  projectsDir?: string
 ): Promise<void> {
-  const state = await readProjectState(projectId);
-  
-  // Merge updates
-  Object.assign(state, updates, {
-    updatedAt: new Date()
-  });
-  
-  await writeMarkdownFile(projectId, state);
+  const converted = toStateManagerFormat(updates);
+  await stateManager.updateProject(projectId, converted, projectsDir);
 }
 
 /**
@@ -134,19 +208,10 @@ export async function addLogEntry(
   projectId: string,
   phase: string,
   event: string,
-  details?: string
+  details?: string,
+  projectsDir?: string
 ): Promise<void> {
-  const state = await readProjectState(projectId);
-  
-  state.logs.push({
-    timestamp: new Date(),
-    phase,
-    event,
-    details
-  });
-  
-  state.updatedAt = new Date();
-  await writeMarkdownFile(projectId, state);
+  await stateManager.addLogEntry(projectId, phase, event, details, projectsDir);
 }
 
 /**
@@ -156,18 +221,10 @@ export async function updateTeamMemberStatus(
   projectId: string,
   agentId: string,
   status: TeamMember['status'],
-  deliverable?: string
+  deliverable?: string,
+  projectsDir?: string
 ): Promise<void> {
-  const state = await readProjectState(projectId);
-  
-  const member = state.team.find(m => m.agentId === agentId);
-  if (member) {
-    member.status = status;
-    if (deliverable) member.deliverable = deliverable;
-  }
-  
-  state.updatedAt = new Date();
-  await writeMarkdownFile(projectId, state);
+  await stateManager.updateTeamMemberStatus(projectId, agentId, status, deliverable, projectsDir);
 }
 
 /**
@@ -178,23 +235,27 @@ export async function recordDispute(
   agents: string[],
   topic: string,
   round: number,
-  resolution?: string
+  resolution?: string,
+  projectsDir?: string
 ): Promise<string> {
-  const state = await readProjectState(projectId);
-  
   const disputeId = `dispute-${Date.now()}`;
-  state.disputes.push({
-    id: disputeId,
-    agents,
-    topic,
-    round,
-    resolution,
-    timestamp: new Date()
-  });
-  
-  state.updatedAt = new Date();
-  await writeMarkdownFile(projectId, state);
-  
+
+  await stateManager.transaction(
+    projectId,
+    (state) => {
+      state.disputes.push({
+        id: disputeId,
+        agents,
+        topic,
+        round,
+        resolution,
+        timestamp: new Date().toISOString()
+      });
+      return state;
+    },
+    projectsDir
+  );
+
   return disputeId;
 }
 
@@ -204,17 +265,20 @@ export async function recordDispute(
 export async function updateDisputeResolution(
   projectId: string,
   disputeId: string,
-  resolution: string
+  resolution: string,
+  projectsDir?: string
 ): Promise<void> {
-  const state = await readProjectState(projectId);
-  
-  const dispute = state.disputes.find(d => d.id === disputeId);
-  if (dispute) {
-    dispute.resolution = resolution;
-  }
-  
-  state.updatedAt = new Date();
-  await writeMarkdownFile(projectId, state);
+  await stateManager.transaction(
+    projectId,
+    (state) => {
+      const dispute = state.disputes.find(d => d.id === disputeId);
+      if (dispute) {
+        dispute.resolution = resolution;
+      }
+      return state;
+    },
+    projectsDir
+  );
 }
 
 /**
@@ -223,132 +287,60 @@ export async function updateDisputeResolution(
 export async function completeMilestone(
   projectId: string,
   milestoneName: string,
-  userConfirmed?: boolean
+  userConfirmed?: boolean,
+  projectsDir?: string
 ): Promise<void> {
-  const state = await readProjectState(projectId);
-  
-  const milestone = state.milestones.find(m => m.name === milestoneName);
-  if (milestone) {
-    milestone.status = 'completed';
-    milestone.timestamp = new Date();
-    if (userConfirmed !== undefined) {
-      milestone.userConfirmed = userConfirmed;
-    }
-  }
-  
-  state.updatedAt = new Date();
-  await writeMarkdownFile(projectId, state);
+  await stateManager.transaction(
+    projectId,
+    (state) => {
+      const milestone = state.milestones.find(m => m.name === milestoneName);
+      if (milestone) {
+        milestone.status = 'completed';
+        milestone.timestamp = new Date().toISOString();
+        if (userConfirmed !== undefined) {
+          milestone.userConfirmed = userConfirmed;
+        }
+      }
+      return state;
+    },
+    projectsDir
+  );
 }
 
 /**
  * Read project state
  */
-export async function readProjectState(projectId: string): Promise<ProjectState> {
-  const filepath = join(PROJECTS_DIR, `project-${projectId}.md`);
-  const content = await readFile(filepath, 'utf-8');
-  return parseMarkdownFile(content);
-}
-
-/**
- * Write project state as Markdown
- */
-async function writeMarkdownFile(projectId: string, state: ProjectState): Promise<void> {
-  const filepath = join(PROJECTS_DIR, `project-${projectId}.md`);
-  const content = generateMarkdownContent(state);
-  await writeFile(filepath, content, 'utf-8');
-}
-
-/**
- * Generate Markdown content from state
- */
-function generateMarkdownContent(state: ProjectState): string {
-  return `# Project: ${state.id}
-
-## Metadata
-
-| Field | Value |
-|-------|-------|
-| **Project ID** | ${state.id} |
-| **Status** | ${state.status} |
-| **Mode** | ${state.mode} |
-| **Created** | ${state.createdAt.toISOString()} |
-| **Updated** | ${state.updatedAt.toISOString()} |
-
-## User Request
-
-${state.userRequest}
-
-## Team
-
-| Role | Agent ID | Status | Rework Count | Deliverable |
-|------|----------|--------|--------------|-------------|
-${state.team.map(m => `| ${m.role} | ${m.agentId} | ${m.status} | ${m.reworkCount} | ${m.deliverable || '-'} |`).join('\n')}
-
-## Milestones
-
-| Milestone | Status | User Confirmed | Timestamp |
-|-----------|--------|----------------|-----------|
-${state.milestones.map(m => `| ${m.name} | ${m.status} | ${m.userConfirmed !== undefined ? (m.userConfirmed ? '✅' : '⏳') : '-'} | ${m.timestamp ? m.timestamp.toISOString() : '-'} |`).join('\n')}
-
-## Execution Log
-
-| Timestamp | Phase | Event | Details |
-|-----------|-------|-------|---------|
-${state.logs.map(l => `| ${l.timestamp.toISOString()} | ${l.phase} | ${l.event} | ${l.details || '-'} |`).join('\n')}
-
-## Disputes
-
-${state.disputes.length === 0 ? 'No disputes recorded.' : state.disputes.map(d => `
-### ${d.id}
-- **Agents:** ${d.agents.join(', ')}
-- **Topic:** ${d.topic}
-- **Round:** ${d.round}
-- **Resolution:** ${d.resolution || 'Pending'}
-- **Timestamp:** ${d.timestamp.toISOString()}
-`).join('\n')}
-
----
-
-*This file is automatically generated and updated throughout the project lifecycle.*
-`;
-}
-
-/**
- * Parse Markdown file to state (simplified)
- */
-function parseMarkdownFile(content: string): ProjectState {
-  // In a full implementation, this would parse the Markdown back to state
-  // For now, return a placeholder that indicates it needs implementation
-  return JSON.parse(content.match(/<!-- STATE: (.*?) -->/)?.[1] || '{}');
+export async function readProjectState(
+  projectId: string,
+  projectsDir?: string
+): Promise<ProjectState> {
+  const state = await stateManager.readProject(projectId, projectsDir);
+  return toLegacyFormat(state);
 }
 
 /**
  * Generate project summary
  */
-export async function generateProjectSummary(projectId: string): Promise<string> {
-  const state = await readProjectState(projectId);
-  
+export async function generateProjectSummary(
+  projectId: string,
+  projectsDir?: string
+): Promise<string> {
+  const state = await stateManager.readProject(projectId, projectsDir);
+  const legacyState = toLegacyFormat(state);
+
   return `
 📊 **Project Summary: ${projectId}**
 
-**Status:** ${state.status}
-**Mode:** ${state.mode}
-**Duration:** ${Math.round((state.updatedAt.getTime() - state.createdAt.getTime()) / 60000)} minutes
+**Status:** ${legacyState.status}
+**Mode:** ${legacyState.mode}
+**Duration:** ${Math.round((legacyState.updatedAt.getTime() - legacyState.createdAt.getTime()) / 60000)} minutes
 
 **Team Performance:**
-${state.team.map(m => `- ${m.role}: ${m.status}${m.reworkCount > 0 ? ` (${m.reworkCount} rework${m.reworkCount > 1 ? 's' : ''})` : ''}`).join('\n')}
+${legacyState.team.map(m => `- ${m.role}: ${m.status}${m.reworkCount > 0 ? ` (${m.reworkCount} rework${m.reworkCount > 1 ? 's' : ''})` : ''}`).join('\n')}
 
 **Milestones:**
-${state.milestones.map(m => `- ${m.name}: ${m.status === 'completed' ? '✅' : '⏳'}${m.userConfirmed !== undefined ? (m.userConfirmed ? ' (confirmed)' : ' (pending confirmation)') : ''}`).join('\n')}
+${legacyState.milestones.map(m => `- ${m.name}: ${m.status === 'completed' ? '✅' : '⏳'}${m.userConfirmed !== undefined ? (m.userConfirmed ? ' (confirmed)' : ' (pending confirmation)') : ''}`).join('\n')}
 
-${state.disputes.length > 0 ? `**Disputes:** ${state.disputes.length} resolved` : ''}
+${legacyState.disputes.length > 0 ? `**Disputes:** ${legacyState.disputes.length} resolved` : ''}
 `;
 }
-
-export {
-  ProjectState,
-  TeamMember,
-  Milestone,
-  DisputeEntry,
-  LogEntry
-};

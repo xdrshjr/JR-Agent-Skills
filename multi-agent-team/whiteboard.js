@@ -6,6 +6,33 @@
 const fs = require('fs');
 const path = require('path');
 
+// Import unified state manager
+let stateManager;
+try {
+  stateManager = require('./src/state-manager');
+} catch (error) {
+  try {
+    stateManager = require('./dist/state-manager');
+  } catch (e) {
+    console.error('❌ State manager not available. Whiteboard operations will fail.');
+    console.error('   Please compile TypeScript modules: npx tsc');
+  }
+}
+
+// Import phase state machine for validation
+let phaseStateMachine;
+try {
+  phaseStateMachine = require('./src/phase-state-machine');
+} catch (error) {
+  // TypeScript module, try compiled version
+  try {
+    phaseStateMachine = require('./dist/phase-state-machine');
+  } catch (e) {
+    console.warn('Phase state machine not available, phase validation disabled');
+    phaseStateMachine = null;
+  }
+}
+
 const WHITEBOARD_FILENAME = 'WHITEBOARD.md';
 
 /**
@@ -74,38 +101,95 @@ function initializeWhiteboard(projectDir, projectId) {
 
 /**
  * 更新白板 - 角色状态
+ *
+ * NEW: Integrated with phase state machine for validation and state manager
  */
-function updateAgentStatus(projectDir, agentRole, status) {
-  const whiteboardPath = path.join(projectDir, WHITEBOARD_FILENAME);
-  
-  if (!fs.existsSync(whiteboardPath)) {
-    return;
+async function updateAgentStatus(projectDir, agentRole, status) {
+  const projectId = path.basename(projectDir);
+  const projectsDir = path.dirname(projectDir);
+
+  // NEW: Phase transition validation
+  if (phaseStateMachine && status.stage) {
+    try {
+      // Get current phase state
+      const currentState = phaseStateMachine.getPhaseState(projectDir, agentRole);
+
+      if (currentState) {
+        // Map stage name to phase
+        const newPhase = phaseStateMachine.mapStageToPhase(status.stage);
+
+        if (newPhase && newPhase !== currentState.currentPhase) {
+          // Validate transition
+          const validation = phaseStateMachine.validatePhaseTransition(
+            currentState.currentPhase,
+            newPhase,
+            currentState.approval
+          );
+
+          if (!validation.valid) {
+            // BLOCK invalid transition
+            console.error(`❌ Invalid phase transition blocked for ${agentRole}: ${validation.reason}`);
+            throw new Error(`Phase transition blocked: ${validation.reason}`);
+          }
+
+          // Perform atomic transition
+          const transitionResult = phaseStateMachine.transitionPhase(
+            projectDir,
+            agentRole,
+            newPhase,
+            'whiteboard_update'
+          );
+
+          if (!transitionResult.valid) {
+            console.error(`❌ Phase transition failed for ${agentRole}: ${transitionResult.reason}`);
+            throw new Error(`Phase transition failed: ${transitionResult.reason}`);
+          }
+
+          console.log(`✅ Phase transition validated: ${agentRole} → ${newPhase}`);
+        }
+      } else {
+        // Initialize phase state if not exists
+        console.log(`Initializing phase state for ${agentRole}`);
+        const initialPhase = phaseStateMachine.mapStageToPhase(status.stage) ||
+                            phaseStateMachine.WorkflowPhase.SKILL_DISCOVERY;
+        phaseStateMachine.initializePhaseState(projectDir, agentRole, initialPhase);
+      }
+    } catch (error) {
+      // Re-throw validation errors to prevent invalid state updates
+      if (error.message.includes('Phase transition blocked') ||
+          error.message.includes('Phase transition failed')) {
+        throw error;
+      }
+      // Log other errors but continue
+      console.error(`Phase validation error: ${error.message}`);
+    }
   }
-  
-  let content = fs.readFileSync(whiteboardPath, 'utf-8');
-  
-  // 更新最后更新时间
-  content = content.replace(
-    /最后更新: .*/,
-    `最后更新: ${new Date().toISOString()}`
-  );
-  
-  // 更新团队成员状态表格
-  const statusLine = `| ${agentRole} | ${status.status} | ${status.stage} | ${status.progress}% | ${new Date().toLocaleTimeString()} |`;
-  
-  // 查找角色行并替换，或添加新行
-  const rolePattern = new RegExp(`\\| ${agentRole} \\|.*\\n`);
-  if (rolePattern.test(content)) {
-    content = content.replace(rolePattern, statusLine + '\n');
-  } else {
-    // 在表格中添加新行
-    content = content.replace(
-      /(\| 角色 \| 状态 \| 当前阶段 \| 进度 \| 最后更新 \|\n\|[-|]+\n)/,
-      `$1${statusLine}\n`
+
+  // Use state manager to update whiteboard state
+  if (!stateManager || !stateManager.updateWhiteboard) {
+    throw new Error(
+      'State manager not available. Cannot update whiteboard safely. ' +
+      'Please ensure state-manager module is properly installed and compiled.'
     );
   }
-  
-  fs.writeFileSync(whiteboardPath, content);
+
+  try {
+    await stateManager.updateWhiteboard(projectId, {
+      teamMembers: [{
+        role: agentRole,
+        agentId: agentRole,
+        status: status.status
+      }],
+      currentPhase: status.stage || 'unknown',
+      lastUpdate: new Date().toISOString()
+    }, projectsDir);
+  } catch (error) {
+    console.error('❌ Failed to update whiteboard via state manager:', error.message);
+    throw new Error(
+      `Whiteboard update failed: ${error.message}. ` +
+      'This indicates a state management issue that must be resolved.'
+    );
+  }
 }
 
 /**
@@ -182,23 +266,37 @@ function logIssue(projectDir, issue, agentRole) {
 /**
  * 记录决策
  */
-function logDecision(projectDir, decision, decider) {
-  const whiteboardPath = path.join(projectDir, WHITEBOARD_FILENAME);
-  
-  if (!fs.existsSync(whiteboardPath)) {
-    return;
+async function logDecision(projectDir, decision, decider) {
+  const projectId = path.basename(projectDir);
+  const projectsDir = path.dirname(projectDir);
+
+  // Use state manager to update whiteboard decisions
+  if (!stateManager || !stateManager.updateWhiteboard) {
+    throw new Error(
+      'State manager not available. Cannot log decision safely. ' +
+      'Please ensure state-manager module is properly installed and compiled.'
+    );
   }
-  
-  let content = fs.readFileSync(whiteboardPath, 'utf-8');
-  const decisionLine = `| ${new Date().toLocaleString()} | ${decision} | ${decider} |`;
-  
-  // 在决策记录中添加
-  content = content.replace(
-    /(## 💬 重要决策记录\n\| 时间 \| 决策 \| 决策人 \|\n\|[-|]+\n)/,
-    `$1${decisionLine}\n`
-  );
-  
-  fs.writeFileSync(whiteboardPath, content);
+
+  try {
+    const state = await stateManager.readProject(projectId, projectsDir);
+    const decisions = state.whiteboard?.decisions || [];
+    decisions.push({
+      topic: decision,
+      decision: decision,
+      timestamp: new Date().toISOString()
+    });
+
+    await stateManager.updateWhiteboard(projectId, {
+      decisions
+    }, projectsDir);
+  } catch (error) {
+    console.error('❌ Failed to log decision via state manager:', error.message);
+    throw new Error(
+      `Decision logging failed: ${error.message}. ` +
+      'This indicates a state management issue that must be resolved.'
+    );
+  }
 }
 
 /**

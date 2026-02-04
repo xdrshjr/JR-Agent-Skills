@@ -1,6 +1,6 @@
 # Multi-Agent Team - Quick Start
 
-A virtual 3-person team that collaborates to complete complex tasks.
+A virtual **3-person executor team + 1 independent QA agent** that collaborates to complete complex tasks.
 
 ## What You Get
 
@@ -19,7 +19,7 @@ Build a Chrome extension that highlights text on webpages and saves to a notes p
 
 The PM will:
 1. Analyze your task
-2. Propose a 3-person team configuration
+2. Propose a 3-person executor team + 1 QA agent configuration
 3. Ask you to choose FULL_AUTO or SUPERVISED mode
 4. Execute and deliver
 
@@ -83,6 +83,46 @@ projects/
 3. **Review the proposed team** - you can suggest role adjustments
 4. **Provide feedback** during milestones in SUPERVISED mode
 5. **Trust the process** - disputes and reworks are normal in teamwork
+
+## Configuration
+
+### Project Directory
+
+Set custom project directory using one of these methods:
+
+**Environment Variable**:
+```bash
+export CLAWD_PROJECTS_DIR="/path/to/your/projects"
+```
+
+**Config File** (`~/.claude/config.json`):
+```json
+{
+  "projectsDirectory": "/Users/username/Documents/multi-agent-projects"
+}
+```
+
+**Note**: Use absolute paths. Relative paths are resolved from the current working directory.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Project Directory Not Found**
+   - Verify path in `~/.claude/config.json` or set `CLAWD_PROJECTS_DIR`
+
+2. **Agent Timeout**
+   - PM automatically restarts agent (max 2 restarts)
+   - After 3 failures, escalates to user
+
+3. **QA Validation Failure**
+   - Executor receives fix guidance and retries (max 3 attempts)
+
+4. **State File Corruption**
+   - Run `node scripts/migrate-state.js --project PROJECT_ID` to repair
+
+5. **Skill Discovery Failure**
+   - Ensure Claude Code has access to skill discovery tools
 
 ## Architecture
 

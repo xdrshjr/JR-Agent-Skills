@@ -1,13 +1,13 @@
 ---
 name: multi-agent-team
-description: A virtual 4-person development team with dynamic roles (3 executors + 1 QA). You act as the Project Manager who assembles a team, assigns tasks, coordinates work, resolves disputes, and delivers the final result. Supports FULL_AUTO and SUPERVISED modes with dual-layer quality assurance.
+description: A virtual 3-person executor team + 1 independent QA agent with dynamic roles. You act as the Project Manager who assembles a team, assigns tasks, coordinates work, resolves disputes, and delivers the final result. Supports FULL_AUTO and SUPERVISED modes with dual-layer quality assurance.
 metadata:
   tags: team, multi-agent, collaboration, project-management, delegation, qa, verification
 ---
 
 # Multi-Agent Team
 
-A virtual 4-person team (3 executors + 1 QA) that works collaboratively to complete complex tasks with dual-layer quality assurance. You act as the **Project Manager (PM)** who orchestrates the entire process.
+A virtual **3-person executor team + 1 independent QA agent** that works collaboratively to complete complex tasks with dual-layer quality assurance. You act as the **Project Manager (PM)** who orchestrates the entire process.
 
 **Critical Principle**: PM is a **coordinator**, not an **executor**. When the team is blocked, you **must** escalate to the user and **pause** the affected sub-agent. Never take over tasks or work around user approval.
 
@@ -20,7 +20,7 @@ A virtual 4-person team (3 executors + 1 QA) that works collaboratively to compl
 ```
 User Request
     ↓
-[Project Manager] Analyzes task, assembles 4-person team (3 Executors + 1 QA)
+[Project Manager] Analyzes task, assembles 3-person executor team + 1 QA agent
     ↓
 [PM Task Distribution]
     ├─→ Assigns execution tasks to 3 Executors
@@ -144,16 +144,26 @@ All → PM:            Blocker escalation (when paused)
 
 ## Skill-Aware Planning
 
-PM now automatically discovers available skills and incorporates them into task planning.
+**NEW: Dynamic Agent-Side Skill Discovery**
+
+Agents now discover and select skills dynamically at runtime instead of receiving pre-assigned skills from PM.
 
 ### Skill Discovery Process
 
 When PM receives a user request:
 
-1. **Scan Available Skills**: Load `skill-discovery/skill-index.json` or regenerate it
-2. **Detect User Intent**: Check if user specified a skill (e.g., "使用 nano-banana-pro")
-3. **Match Skills to Task**: Based on task keywords, recommend relevant skills
-4. **Assign Skills to Agents**: Distribute appropriate skills to each team member
+1. **Detect User Intent**: PM recognizes patterns like "使用 {skill-name} 技能" and marks as mandatory
+2. **Agent Skill Discovery**: Each agent uses `find-skills` to discover available skills in their environment
+3. **Agent Skill Selection**: Agents select 2-3 skills matching their role and expertise
+4. **PM Approval**: PM reviews and approves agent skill selections before planning begins
+5. **Execution**: Agents use approved skills during task execution
+
+### Benefits of Dynamic Discovery
+
+- ✅ **Generic & Portable**: Works on any computer with any set of skills
+- ✅ **Always Up-to-Date**: No stale cache, agents see current environment
+- ✅ **Environment-Aware**: Each agent discovers only what's available
+- ✅ **User-Specific**: Different users with different skill sets work seamlessly
 
 ### User Specified Skills
 
@@ -164,33 +174,11 @@ PM recognizes these patterns:
 - "基于 {skill-name}"
 
 If a skill is specified:
-- ✅ Verify it exists and is installed
+- ✅ Mark as mandatory for agent skill selection
+- ✅ Verify it exists during agent discovery phase
 - ✅ Check if it matches the task type
 - ⚠️ Warn if it may not be suitable
 - 📋 Include it in skill planning
-
-### Skill Assignment to Agents
-
-Each sub-agent receives:
-```
-═══════════════════════════════════════════════════════════
-🛠️ 可用工具与技能
-═══════════════════════════════════════════════════════════
-
-本任务可以使用以下 skills:
-
-【Skill: {skill-name}】
-• 功能: {description}
-• 位置: {path}
-• 能力: {capabilities}
-• 使用方法: `read:0:{"path": "{location}/SKILL.md"}`
-
-⚠️ 重要提示:
-1. 在执行任务前，先检查是否有可用的 skill
-2. 优先使用 skill 而不是手动实现
-3. 如果 skill 不能满足需求，立即向 PM 汇报
-═══════════════════════════════════════════════════════════
-```
 
 ---
 
@@ -201,11 +189,48 @@ Each sub-agent receives:
 ### Workflow Overview
 
 ```
-需求理解 → Skill调研 → 方案规划 → PM审批 → 执行 → 完成
-   ↑         ↑          ↑          ↑       ↑       ↑
- 汇报      汇报       汇报       等待    进度    最终
-                              批准    汇报    汇报
+技能发现 → 需求理解 → Skill调研 → 方案规划 → PM审批 → 执行 → 完成
+   ↑         ↑         ↑          ↑          ↑       ↑       ↑
+ 汇报      汇报      汇报       汇报       等待    进度    最终
+ 批准                                    批准    汇报    汇报
 ```
+
+### Stage 0: 技能发现 (5%)
+
+**在开始规划前，子智能体必须先发现可用的技能**：
+
+1. 使用 `find-skills` 技能发现环境中所有可用的技能
+2. 根据自己的角色和任务需求，选择2-3个最匹配的技能
+3. 向 PM 汇报选择结果和理由
+4. 等待 PM 批准
+
+**汇报模板**:
+```
+📊 阶段汇报 —— {role} —— 技能发现完成
+
+【发现的技能】
+共发现 {N} 个可用技能
+
+【推荐使用的技能】
+1. {skill-name}:
+   - 功能: xxx
+   - 匹配理由: 适合我的角色（{role}），因为...
+
+2. {skill-name}:
+   - 功能: xxx
+   - 匹配理由: 可以帮助完成...
+
+【用户指定的必须使用技能】
+（如果有）
+- {skill-name}: 用户明确要求使用
+
+请 PM 批准技能选择。
+```
+
+**PM 回复选项**:
+- ✅ "技能选择批准，进入下一步"
+- 📝 "需要调整：xxx"
+- ❌ "不批准，请重新选择：xxx"
 
 ### Stage 1: 需求理解 (10%)
 
@@ -238,9 +263,9 @@ Each sub-agent receives:
 ### Stage 2: Skill 调研 (20%)
 
 理解确认后：
-1. 查看项目可用技能列表
-2. 阅读相关技能的 SKILL.md 文档
-3. 了解每个技能的功能、限制、使用方法
+1. 阅读已批准技能的 SKILL.md 文档
+2. 了解每个技能的功能、限制、使用方法
+3. 确认技能能否满足任务需求
 4. 向 PM 汇报调研结果
 
 **汇报模板**:
@@ -248,17 +273,19 @@ Each sub-agent receives:
 📊 阶段汇报 —— {role} —— Skill 调研完成
 
 【已阅读的技能】
-1. skill-name:
+1. {skill-name}:
    - 功能: xxx
+   - 限制: xxx
    - 适用性: 适合/不适合（原因）
 
-【技能选择理由】
-• 选择 skill A: 因为...
+【技能使用计划】
+• 使用 {skill-name} 完成: xxx
+• 使用 {skill-name} 完成: xxx
 
 【发现的问题/限制】
 • 问题1: xxx
 
-请 PM 确认技能选择方向。
+请 PM 确认技能使用方向。
 ```
 
 ### Stage 3: 方案规划 (30%)
@@ -406,7 +433,7 @@ xxx
 
 ## Team Structure
 
-For each task, the PM dynamically assembles a **4-person team** with complementary roles:
+For each task, the PM dynamically assembles a **3-person executor team + 1 independent QA agent** with complementary roles:
 
 | Role Type | Typical Responsibilities |
 |-----------|--------------------------|
@@ -431,7 +458,7 @@ The QA Agent is a dedicated quality assurance specialist who operates independen
 ```
 User Request
     ↓
-[Project Manager] Analyzes task, assembles 4-person team (3 executors + 1 QA)
+[Project Manager] Analyzes task, assembles 3-person executor team + 1 QA agent
     ↓
 [Skill-Aware Planning] PM distributes tasks to executors AND validation scope to QA
     ↓
