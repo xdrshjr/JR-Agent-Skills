@@ -20,16 +20,22 @@ A virtual **3-person executor team + 1 independent QA agent** that works collabo
 ```
 User Request
     ↓
-[Project Manager] Analyzes task, assembles 3-person executor team + 1 QA agent
+[Stage 0: Requirement Clarification] PM conducts multi-round dialogue
+    ├─→ Ask 5 adaptive questions per round
+    ├─→ Evaluate confidence across 5 dimensions
+    ├─→ Stop when confidence ≥ 75/100 (min 2 rounds)
+    └─→ Generate enriched request with clarifications
     ↓
-[PM Task Distribution]
-    ├─→ Assigns execution tasks to 3 Executors
-    └─→ Assigns validation scope to QA (with original plan)
+[Project Manager] Analyzes enriched request, assembles 3-person executor team + 1 QA agent
     ↓
-[Phase 1: Execution] 3 Executors work in parallel
-    ├─ Executor 1: Task A → Delivers to QA
-    ├─ Executor 2: Task B → Delivers to QA
-    └─ Executor 3: Task C → Delivers to QA
+[PM Task Distribution with Section Assignment]
+    ├─→ Assigns execution tasks + specific sections to 3 Executors
+    └─→ Assigns validation scope to QA (all sections, no content ownership)
+    ↓
+[Phase 1: Execution] 3 Executors work in parallel with team context awareness
+    ├─ Executor 1: Section A (coordinates via WHITEBOARD) → Delivers to QA
+    ├─ Executor 2: Section B (coordinates via WHITEBOARD) → Delivers to QA
+    └─ Executor 3: Section C (coordinates via WHITEBOARD) → Delivers to QA
     ↓
 [Phase 2: Validation Planning] QA creates validation plan
     ↓
@@ -44,40 +50,69 @@ User Request
     ↓
 [Phase 5: PM Final Acceptance] PM reviews QA report + spot-checks
     ↓
-Final Deliverable to User
+Final Deliverable to User (aggregated and cohesive)
 ```
 
-### Detailed 6-Stage Workflow
+### Detailed 7-Stage Workflow
 
 ```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    STAGE 0: REQUIREMENT CLARIFICATION                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ PM Actions:                                                              │
+│   1. Conduct multi-round dialogue with user (minimum 2 rounds)           │
+│   2. Ask 5 adaptive questions per round targeting confidence gaps        │
+│   3. Evaluate confidence across 5 dimensions after each round:           │
+│      • Scope Clarity (25%): Goal, boundaries, deliverables               │
+│      • Technical Clarity (25%): Tech stack, constraints, dependencies    │
+│      • Deliverable Clarity (20%): Format, structure, acceptance criteria │
+│      • Constraint Clarity (15%): Timeline, resources, limitations        │
+│      • Context Clarity (15%): Background, audience, success metrics      │
+│   4. Stop when confidence ≥ 75/100 AND minimum 2 rounds completed        │
+│   5. After round 3, offer user choice to continue or proceed             │
+│   6. Generate enriched request with structured clarifications            │
+│   7. Create audit trail of Q&A history                                   │
+│                                                                           │
+│ Output: Enriched request + clarification history                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           STAGE 1: PROJECT INITIATION                    │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ PM Actions:                                                              │
-│   1. Analyze user request                                                │
+│   1. Analyze enriched request (with clarifications)                      │
 │   2. Determine team composition (3 Executors + 1 QA)                     │
-│   3. Create project plan                                                 │
+│   3. Create project plan with section assignments                        │
 │   4. Distribute tasks:                                                   │
-│      • To Executors: Individual execution tasks + expected deliverables  │
-│      • To QA: Original plan + all executor tasks + deliverables list     │
+│      • To Executors: Individual tasks + assigned sections + team context │
+│        - Section assignment based on task type (document/code/research)  │
+│        - Full visibility of teammate sections and dependencies           │
+│        - Integration context (position, dependencies, coordination)      │
+│      • To QA: Validation scope (all sections) + no content ownership     │
+│        - QA validates all sections but doesn't create content            │
+│        - QA receives complete project structure for context              │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           STAGE 2: EXECUTION                             │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Executor Actions (parallel):                                             │
-│   1. Understand task → Report to PM                                      │
+│ Executor Actions (parallel with team context awareness):                 │
+│   1. Understand task + assigned section + team context → Report to PM    │
+│      • Review assigned section within larger deliverable                 │
+│      • Check teammate sections and dependencies on WHITEBOARD            │
+│      • Clarify integration points with dependent sections                │
 │   2. Skill research → Report to PM                                       │
 │   3. Create execution plan → PM approves → Execute                       │
-│   4. Submit deliverable to QA (NOT to PM directly)                       │
-│   5. Status: COMPLETED → PENDING_VERIFICATION                            │
+│   4. Coordinate via WHITEBOARD to see teammate progress                  │
+│   5. Submit deliverable (section only, not standalone) to QA             │
+│   6. Status: COMPLETED → PENDING_VERIFICATION                            │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           STAGE 3: VALIDATION PLANNING                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ QA Actions:                                                              │
-│   1. Understand validation scope → Report to PM                          │
+│   1. Understand validation scope (all sections) → Report to PM           │
 │   2. Create validation plan (methods, criteria, steps, tools)            │
 │   3. Report plan to PM for approval                                      │
 │   ⚠️ Must get PM approval before validating!                             │
@@ -111,7 +146,7 @@ Final Deliverable to User
 │ PM Actions:                                                              │
 │   1. Review QA validation report                                         │
 │   2. Spot-check critical deliverables                                    │
-│   3. If acceptable: Package final deliverable                            │
+│   3. If acceptable: Package final deliverable (aggregated and cohesive)  │
 │   4. Deliver to user with summary                                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -182,6 +217,161 @@ If a skill is specified:
 
 ---
 
+## Requirement Clarification Phase
+
+**NEW: Multi-Round Requirement Clarification System (Added 2026-02-05)**
+
+Before creating the multi-agent team, the PM conducts a structured dialogue with the user to ensure requirements are well-understood. This prevents wasted effort and misaligned deliverables.
+
+### Purpose
+
+- **Reduce Ambiguity**: Clarify unclear requirements before team creation
+- **Prevent Misalignment**: Ensure all stakeholders have shared understanding
+- **Save Time**: Avoid rework by clarifying upfront
+- **Create Audit Trail**: Document all requirement discussions
+
+### Confidence-Based Evaluation
+
+The system evaluates requirement clarity across **5 weighted dimensions**:
+
+| Dimension | Weight | What It Measures |
+|-----------|--------|------------------|
+| **Scope Clarity** | 25% | Goal, boundaries, deliverables clearly defined |
+| **Technical Clarity** | 25% | Tech stack, constraints, dependencies understood |
+| **Deliverable Clarity** | 20% | Format, structure, acceptance criteria specified |
+| **Constraint Clarity** | 15% | Timeline, resources, limitations known |
+| **Context Clarity** | 15% | Background, audience, success metrics clear |
+
+**Overall Confidence Score** = Weighted average of all dimensions (0-100)
+
+### Multi-Round Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         ROUND 1: INITIAL                         │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Show current understanding summary                            │
+│ 2. Ask 5 questions covering all dimensions                       │
+│ 3. Collect user answers                                          │
+│ 4. Evaluate confidence across 5 dimensions                       │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    ROUND 2+: ADAPTIVE                            │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Show updated understanding summary                            │
+│ 2. Ask 5 adaptive questions targeting lowest-confidence gaps    │
+│ 3. Collect user answers                                          │
+│ 4. Re-evaluate confidence                                        │
+│ 5. Check stopping criteria:                                      │
+│    • Confidence ≥ 75/100 AND minimum 2 rounds completed → STOP   │
+│    • Round 3 completed → Offer user choice (continue/proceed)    │
+│    • Otherwise → Continue to next round                          │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                         OUTPUT                                   │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Enriched request with structured clarifications              │
+│ 2. Complete Q&A history (audit trail)                            │
+│ 3. Final confidence scores per dimension                         │
+│ 4. Ready for team assembly                                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Stopping Criteria
+
+**Automatic Stop**: When confidence ≥ 75/100 AND minimum 2 rounds completed
+
+**Soft Maximum**: After round 3, PM offers user choice:
+- "Continue clarification" → Round 4
+- "Proceed with current understanding" → Stop and proceed
+
+**Hard Maximum**: 5 rounds (prevents infinite loops)
+
+### Enriched Request Format
+
+After clarification, the original request is enriched with structured clarifications:
+
+```
+[Original User Request]
+
+---
+CLARIFICATIONS (from requirement clarification dialogue):
+
+Scope:
+- [Clarification 1]
+- [Clarification 2]
+
+Technical Details:
+- [Clarification 3]
+- [Clarification 4]
+
+Deliverable Format:
+- [Clarification 5]
+
+Constraints:
+- [Clarification 6]
+
+Context:
+- [Clarification 7]
+
+---
+Q&A HISTORY:
+
+Round 1:
+Q1: [Question]
+A1: [Answer]
+...
+
+Round 2:
+Q1: [Question]
+A1: [Answer]
+...
+```
+
+### Integration with Team Assembly
+
+The enriched request is used in **Stage 1: Project Initiation** instead of the raw user request:
+
+1. PM analyzes **enriched request** (not original request)
+2. PM has full context from clarifications
+3. Team receives better-defined tasks
+4. Reduces need for mid-execution clarifications
+
+### Implementation Modules
+
+- `src/requirement-clarification.ts` - Main orchestrator
+- `src/clarification-state.ts` - State management
+- `src/confidence-evaluator.ts` - Multi-dimensional scoring
+- `src/question-generator.ts` - Adaptive question generation
+
+### Example Clarification Session
+
+**Initial Request**: "Create a user authentication system"
+
+**Round 1 Questions**:
+1. What authentication methods should be supported? (email/password, OAuth, SSO?)
+2. What user roles and permissions are needed?
+3. Should this integrate with an existing database or create a new one?
+4. What security standards must be met? (OWASP, GDPR, etc.)
+5. What is the expected user scale? (100s, 1000s, millions?)
+
+**After Round 1**: Confidence = 45/100 (low technical and deliverable clarity)
+
+**Round 2 Questions** (adaptive, targeting gaps):
+1. Which OAuth providers should be supported? (Google, GitHub, Microsoft?)
+2. What token strategy? (JWT, session-based, refresh tokens?)
+3. Should password reset be email-based or SMS-based?
+4. What frontend framework will consume this API? (React, Vue, Angular?)
+5. Are there existing API endpoints this must integrate with?
+
+**After Round 2**: Confidence = 78/100 → **STOP** (threshold met)
+
+**Enriched Request**: Original request + 10 structured clarifications ready for team assembly
+
+---
+
 ## Sub-Agent Autonomous Planning Workflow
 
 子智能体必须按照 **"规划 → 审批 → 执行"** 的流程工作，不得跳过任何步骤。
@@ -237,7 +427,15 @@ If a skill is specified:
 子智能体收到任务后：
 1. 仔细阅读用户原始需求
 2. 明确核心问题和成功标准
-3. 向 PM 汇报理解结果
+3. **理解分配的章节/部分和团队上下文**
+4. 向 PM 汇报理解结果
+
+**团队上下文理解（NEW）**:
+- **你的分配章节**: 理解你负责的具体部分（不是完整的独立交付物）
+- **整体交付物**: 了解最终交付物的完整结构
+- **队友章节**: 查看其他队友负责的部分
+- **依赖关系**: 确认你的工作依赖哪些队友的输出
+- **集成点**: 明确你的部分如何与其他部分衔接
 
 **汇报模板**:
 ```
@@ -246,12 +444,26 @@ If a skill is specified:
 【任务理解】
 （简述理解）
 
+【我的分配章节】
+• 章节名称: {assigned section}
+• 在整体中的位置: {beginning/middle/end}
+• 与其他章节的关系: {integration context}
+
+【团队协作理解】
+• 依赖的队友: {teammate roles}
+• 需要的输入: {what I need from them}
+• 我的输出将用于: {how my work will be used}
+
 【核心问题】
 • 问题1: xxx
 • 问题2: xxx
 
 【成功标准】
 • 标准1: xxx
+
+【协调计划】
+• 将通过 WHITEBOARD 查看队友进度
+• 需要与 {teammate} 协调的集成点: xxx
 
 请 PM 确认理解是否正确。
 ```
@@ -441,7 +653,63 @@ For each task, the PM dynamically assembles a **3-person executor team + 1 indep
 | **Executor (x2)** | Core implementation, coding, writing, creation |
 | **QA/Verifier** | **Independent verification of all deliverables, validation planning, quality gate** |
 
-### QA/Verifier Role (New)
+### Team Context Awareness (NEW - 2026-02-05)
+
+**Problem Solved**: Agents now understand they are contributing **part of a larger whole** rather than creating complete standalone deliverables.
+
+**Key Features**:
+- **Section Assignment**: Each executor receives a specific section/part (e.g., "Chapter 1", "Backend API", "Literature Review")
+- **Full Team Visibility**: Agents see complete team structure, all assigned sections, and dependencies
+- **Real-Time Coordination**: WHITEBOARD shows live progress of all team members
+- **Task-Specific Structure**: Section assignments adapt to task type (document, code, research, video, design)
+
+**Section Assignment Examples by Task Type**:
+
+| Task Type | Section Assignment Pattern |
+|-----------|---------------------------|
+| **Document Tasks** | "1. Executive Summary & Introduction", "2. Main Content & Analysis", "3. Conclusions & Recommendations" |
+| **Code Tasks** | "Backend API & Business Logic", "Frontend UI & User Experience", "Database Schema & Data Layer" |
+| **Research Tasks** | "Literature Review & Background", "Methodology & Data Collection", "Results & Discussion" |
+| **Video Tasks** | "Script & Storyboard", "Visual Assets & Graphics", "Audio & Final Assembly" |
+| **Design Tasks** | "Visual Design & Branding", "Interaction Design & UX Flow", "Assets & Design System" |
+
+**Agent System Prompt Enhancements**:
+
+Each agent receives enhanced context in their system prompt:
+
+1. **Project Structure Section**:
+   - Overall deliverable description
+   - Project outline/structure
+   - Agent's assigned section
+   - Integration context (position, dependencies)
+
+2. **Full Teammate Context**:
+   - List of all teammates with their roles
+   - Each teammate's assigned section
+   - Each teammate's responsibilities and deliverables
+   - Coordination strategy
+
+3. **WHITEBOARD Reference**:
+   - How to check teammate progress
+   - When to coordinate with dependent agents
+   - How to ensure smooth integration
+
+**QA Special Handling**:
+
+QA agents receive special treatment:
+- **Assigned Section**: "Quality Assurance & Validation (All Sections)"
+- **No Content Ownership**: QA validates all sections but doesn't create content
+- **Full Project Visibility**: QA sees complete project structure for context
+
+**Benefits**:
+- ✅ Prevents fragmented deliverables (no more 3 separate reports when 1 cohesive report is needed)
+- ✅ Clear boundaries between agent responsibilities
+- ✅ Better coordination through shared visibility
+- ✅ Cohesive final outputs that integrate seamlessly
+
+**Implementation**: See `src/team.ts:140-220` for agent prompt generation with team context.
+
+### QA/Verifier Role
 
 The QA Agent is a dedicated quality assurance specialist who operates independently from the execution team:
 
@@ -574,6 +842,9 @@ PM must maintain `projects/{project-id}/agent-status.json`:
         {"status": "UNDER_VERIFICATION", "at": "2026-02-01T04:35:00Z"},
         {"status": "VERIFIED", "at": "2026-02-01T04:45:00Z"}
       ],
+      "assignedSection": "Frontend UI & User Experience",
+      "sectionOrder": 2,
+      "dependencies": ["Backend Developer"],
       "deliverable": {
         "path": "/projects/pi-agent-analysis/frontend.md",
         "submittedToQA": "2026-02-01T04:30:00Z",
@@ -598,6 +869,9 @@ PM must maintain `projects/{project-id}/agent-status.json`:
         {"status": "UNDER_VERIFICATION", "at": "2026-02-01T04:35:00Z"},
         {"status": "RETURNED_FOR_FIX", "at": "2026-02-01T04:40:00Z"}
       ],
+      "assignedSection": "Backend API & Business Logic",
+      "sectionOrder": 1,
+      "dependencies": [],
       "deliverable": {
         "path": "/projects/pi-agent-analysis/api.md",
         "submittedToQA": "2026-02-01T04:30:00Z"
@@ -619,6 +893,24 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       },
       "progress": "80%"
     }
+  },
+  "projectContext": {
+    "finalDeliverable": "Complete web application with frontend and backend",
+    "outline": "1. Backend API\n2. Frontend UI\n3. Database Schema",
+    "clarificationHistory": [
+      {
+        "round": 1,
+        "questions": ["Q1", "Q2", "Q3", "Q4", "Q5"],
+        "answers": ["A1", "A2", "A3", "A4", "A5"],
+        "confidence": 45
+      },
+      {
+        "round": 2,
+        "questions": ["Q1", "Q2", "Q3", "Q4", "Q5"],
+        "answers": ["A1", "A2", "A3", "A4", "A5"],
+        "confidence": 78
+      }
+    ]
   }
 }
 ```
@@ -639,6 +931,9 @@ PM must maintain `projects/{project-id}/agent-status.json`:
         {"status": "QA_PLANNING", "at": "2026-02-01T04:05:00Z"},
         {"status": "QA_VALIDATING", "at": "2026-02-01T04:15:00Z"}
       ],
+      "assignedSection": "Quality Assurance & Validation (All Sections)",
+      "sectionOrder": null,
+      "dependencies": [],
       "validationPlan": {
         "planApproved": true,
         "approvedAt": "2026-02-01T04:15:00Z",
@@ -680,6 +975,70 @@ PM must maintain `projects/{project-id}/agent-status.json`:
   }
 }
 ```
+
+**Note on QA Section Assignment**: QA agents receive the special section "Quality Assurance & Validation (All Sections)" to indicate they validate all executor sections but don't create content themselves.
+
+#### New State Schema Fields (Added 2026-02-05)
+
+**Team Context Awareness Fields**:
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `assignedSection` | string | Specific section/part assigned to this agent | "Backend API & Business Logic" |
+| `sectionOrder` | number | Numeric order for section sequencing (null for QA) | 1, 2, 3 |
+| `dependencies` | string[] | Array of role names this agent depends on | ["Backend Developer"] |
+
+**Project Context Fields** (at project level):
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `finalDeliverable` | string | Overall deliverable description | "Complete web application" |
+| `outline` | string | Project outline/structure | "1. Backend\n2. Frontend\n3. Database" |
+| `clarificationHistory` | object[] | Q&A rounds from requirement clarification | See schema below |
+
+**Clarification History Schema**:
+
+```json
+{
+  "clarificationHistory": [
+    {
+      "round": 1,
+      "questions": ["Question 1", "Question 2", "..."],
+      "answers": ["Answer 1", "Answer 2", "..."],
+      "confidence": 45,
+      "dimensions": {
+        "scope": 40,
+        "technical": 35,
+        "deliverable": 50,
+        "constraints": 45,
+        "context": 55
+      }
+    },
+    {
+      "round": 2,
+      "questions": ["Question 1", "Question 2", "..."],
+      "answers": ["Answer 1", "Answer 2", "..."],
+      "confidence": 78,
+      "dimensions": {
+        "scope": 80,
+        "technical": 75,
+        "deliverable": 85,
+        "constraints": 70,
+        "context": 80
+      }
+    }
+  ]
+}
+```
+
+**Usage Notes**:
+
+- **assignedSection**: Used in agent system prompts to clarify scope
+- **sectionOrder**: Determines integration sequence (lower numbers first)
+- **dependencies**: Used to check WHITEBOARD for prerequisite completion
+- **finalDeliverable**: Provides context for how agent's work fits into whole
+- **outline**: Shows complete project structure to all agents
+- **clarificationHistory**: Audit trail of requirement clarification process
 
 #### Project-Level Status Summary
 
@@ -1627,6 +1986,147 @@ Issues: {none / summary}
 ```
 
 **Issue Escalation**: Use detailed format from "Sub-Agent Pause Protocol"
+
+---
+
+### Team Coordination via WHITEBOARD (NEW - 2026-02-05)
+
+The WHITEBOARD is a shared communication board that provides real-time visibility into team progress and project structure.
+
+#### What WHITEBOARD Shows
+
+**Project Structure Section**:
+```
+═══════════════════════════════════════════════════════════
+📋 PROJECT STRUCTURE
+═══════════════════════════════════════════════════════════
+
+Overall Deliverable: {final deliverable description}
+
+Project Outline:
+{structured outline of the complete deliverable}
+
+Section Assignments:
+• Agent 1 ({role}): {assigned section}
+• Agent 2 ({role}): {assigned section}
+• Agent 3 ({role}): {assigned section}
+• QA Agent: Quality Assurance & Validation (All Sections)
+
+Dependencies:
+• {Agent X} depends on {Agent Y} for {what}
+```
+
+**Team Status Section**:
+```
+═══════════════════════════════════════════════════════════
+👥 TEAM STATUS
+═══════════════════════════════════════════════════════════
+
+Agent 1 - {role}:
+  Status: {RUNNING/PAUSED/COMPLETED}
+  Phase: {current phase}
+  Progress: {X}%
+  Section: {assigned section}
+  Last Update: {timestamp}
+
+Agent 2 - {role}:
+  Status: {RUNNING/PAUSED/COMPLETED}
+  Phase: {current phase}
+  Progress: {X}%
+  Section: {assigned section}
+  Last Update: {timestamp}
+
+Agent 3 - {role}:
+  Status: {RUNNING/PAUSED/COMPLETED}
+  Phase: {current phase}
+  Progress: {X}%
+  Section: {assigned section}
+  Last Update: {timestamp}
+
+QA Agent:
+  Status: {RUNNING/COMPLETED}
+  Phase: {current phase}
+  Progress: {X}%
+  Last Update: {timestamp}
+```
+
+#### When to Check WHITEBOARD
+
+**Executors should check WHITEBOARD**:
+- At the start of each phase (to understand team context)
+- Before starting execution (to check dependency status)
+- When blocked waiting for another agent's output
+- When coordinating integration points
+- During progress reporting (to provide context)
+
+**PM should check WHITEBOARD**:
+- When monitoring team progress
+- When an agent reports a dependency issue
+- When making approval decisions
+- When generating status updates for users
+
+**QA should check WHITEBOARD**:
+- When planning validation (to understand project structure)
+- When validating integration between sections
+- When reporting validation results
+
+#### How to Use WHITEBOARD for Coordination
+
+**Example: Agent with Dependency**
+
+```
+Agent: Frontend Developer
+Assigned Section: "Frontend UI & User Experience"
+Depends on: Backend Developer (for API endpoints)
+
+Action:
+1. Check WHITEBOARD to see Backend Developer status
+2. If Backend is still in progress:
+   - Work on UI components that don't need API
+   - Prepare mock data for testing
+   - Check WHITEBOARD periodically for updates
+3. If Backend is completed:
+   - Review Backend's deliverable
+   - Integrate API endpoints
+   - Proceed with full implementation
+```
+
+**Example: Agent Reporting Progress**
+
+```
+📈 进度汇报 —— Frontend Developer —— 60%
+
+【已完成】
+• UI component library created
+• Mock data integration complete
+
+【进行中】
+• Waiting for Backend API endpoints (checked WHITEBOARD: Backend at 80%)
+• Preparing integration tests
+
+【协调情况】
+• 已查看 WHITEBOARD，Backend Developer 预计今天完成
+• 已准备好集成方案，等待 API 文档
+
+【下一步】
+• 集成真实 API
+• 完成端到端测试
+```
+
+#### WHITEBOARD Update Protocol
+
+**Automatic Updates**:
+- Agent status changes (RUNNING → PAUSED → COMPLETED)
+- Phase transitions (requirement → skill_research → execution)
+- Progress percentage updates
+
+**Manual Updates** (via PM):
+- Project structure changes
+- Section reassignments
+- Dependency modifications
+- Special coordination notes
+
+**File Location**: `projects/{project-id}/WHITEBOARD.md`
 
 ---
 
