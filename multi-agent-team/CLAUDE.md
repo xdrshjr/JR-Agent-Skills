@@ -15,7 +15,7 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 - **3 Executor Agents**: Dynamically assigned roles based on task type (e.g., Frontend Dev, Backend Dev, Designer)
 - **1 QA Agent**: Independent verification specialist who validates all executor deliverables
 
-### Team Context Awareness (NEW - 2026-02-05)
+### Team Context Awareness
 
 **Problem Solved:** Agents now understand they are contributing **part of a larger whole** rather than creating complete standalone deliverables.
 
@@ -38,10 +38,10 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 3. **WHITEBOARD Reference**: Explains how to use WHITEBOARD for coordination and when to check it
 
 **Benefits:**
-- ✅ Prevents fragmented deliverables (no more 3 separate reports when 1 cohesive report is needed)
-- ✅ Clear boundaries between agent responsibilities
-- ✅ Better coordination through shared visibility
-- ✅ Cohesive final outputs that integrate seamlessly
+- Prevents fragmented deliverables (no more 3 separate reports when 1 cohesive report is needed)
+- Clear boundaries between agent responsibilities
+- Better coordination through shared visibility
+- Cohesive final outputs that integrate seamlessly
 
 **Implementation:** See `IMPLEMENTATION_SUMMARY.md` for complete technical details.
 
@@ -59,7 +59,7 @@ User Request → Requirement Clarification → PM Analysis → Team Assembly →
 [QA Report] → [PM Final Acceptance] → Deliver to User
 ```
 
-### Requirement Clarification Phase (NEW - 2026-02-05)
+### Requirement Clarification Phase
 
 **Problem Solved:** Ensures requirements are well-understood BEFORE creating the multi-agent team, preventing wasted effort and misaligned deliverables.
 
@@ -88,11 +88,11 @@ User Request → Requirement Clarification → PM Analysis → Team Assembly →
 **Integration Point**: Between skill planning and team assembly in `pm-workflow.js`
 
 **Benefits:**
-- ✅ Reduces ambiguity before team creation
-- ✅ Prevents misaligned deliverables
-- ✅ Saves time by clarifying upfront
-- ✅ Improves team planning accuracy
-- ✅ Creates audit trail of requirements
+- Reduces ambiguity before team creation
+- Prevents misaligned deliverables
+- Saves time by clarifying upfront
+- Improves team planning accuracy
+- Creates audit trail of requirements
 
 **Implementation:** See modules in `src/requirement-clarification.ts`, `src/confidence-evaluator.ts`, `src/question-generator.ts`
 
@@ -108,21 +108,21 @@ User Request → Requirement Clarification → PM Analysis → Team Assembly →
 **QA States**:
 - `RUNNING` → `QA_PLANNING` → `QA_VALIDATING` → `QA_COMPLETED`
 
-**Phase States** (NEW - Enforced by Phase State Machine):
+**Phase States**:
 - `skill_discovery` → `requirement` → `skill_research` → `plan_design` → `awaiting_approval` → `execution` → `completion`
 - **Critical Checkpoint**: Agents CANNOT transition from `awaiting_approval` to `execution` without PM approval
 - Runtime enforcement prevents phase skipping
 
-**Implementation Status**: ✅ **FULLY INTEGRATED** - The phase state machine (`src/phase-state-machine.ts`) is actively enforcing workflow integrity:
-- **whiteboard.js:107-166**: Validates and blocks invalid phase transitions when agents update status
-- **pm-workflow.js:701-758**: Enforces approval checkpoint via `approveAgentPlan()` and `rejectAgentPlan()`
-- **src/team.ts:458-479**: Detects agents waiting for approval and warns on message send
-- **Atomic operations**: All phase transitions use file locking for consistency
-- **Error handling**: Invalid transitions throw errors and prevent state corruption
+**Implementation**: The phase state machine (`src/phase-state-machine.ts`) actively enforces workflow integrity:
+- Validates and blocks invalid phase transitions when agents update status
+- Enforces approval checkpoint via `approveAgentPlan()` and `rejectAgentPlan()`
+- Detects agents waiting for approval and warns on message send
+- All phase transitions use file locking for consistency
+- Invalid transitions throw errors and prevent state corruption
 
 ## Critical Protocols
 
-### Phase Transition Enforcement (NEW)
+### Phase Transition Enforcement
 
 **Phase State Machine** enforces workflow integrity at runtime:
 
@@ -146,11 +146,11 @@ const waiting = getAgentsAwaitingApproval(projectDir);
 ```
 
 **Key Features**:
-- ✅ Task-agnostic: Works for any task type (code, design, research, video, etc.)
-- ✅ Role-agnostic: Works for any agent role
-- ✅ Environment-independent: No hardcoded paths
-- ✅ Atomic transitions: Prevents race conditions
-- ✅ Full audit trail: Complete transition history
+- Task-agnostic: Works for any task type (code, design, research, video, etc.)
+- Role-agnostic: Works for any agent role
+- Environment-independent: No hardcoded paths
+- Atomic transitions: Prevents race conditions
+- Full audit trail: Complete transition history
 
 ### Sub-Agent Pause Protocol (MANDATORY)
 
@@ -195,43 +195,43 @@ When QA rejects a deliverable:
 
 ### Core Implementation
 - `src/team.ts` (815 lines): Team spawning, messaging, timeout handling, dispute resolution
-- `src/state.ts` (355 lines): **UPDATED** - Backward compatibility layer (delegates to state-manager)
+- `src/state.ts` (355 lines): Backward compatibility layer (delegates to state-manager)
 - `src/deliverable.ts` (396 lines): Aggregation logic for different deliverable types
 - `src/index.ts` (377 lines): Main entry point and workflow orchestration
 - `src/phase-state-machine.ts` (450 lines): Generic phase transition enforcement engine
 
-### State Management (NEW)
-- `src/state-manager.ts` (450 lines): **NEW** - Unified state management with single source of truth
-- `src/state-lock.ts` (120 lines): **NEW** - File locking for atomic operations (uses proper-lockfile)
-- `src/state-sync.ts` (200 lines): **NEW** - Automatic synchronization to derived views
-- `src/state-validator.ts` (280 lines): **NEW** - Consistency validation and recovery
-- `src/concurrency-manager.ts` (420 lines): **NEW** - Execution slot management and resource control
+### State Management
+- `src/state-manager.ts` (450 lines): Unified state management with single source of truth
+- `src/state-lock.ts` (120 lines): File locking for atomic operations (uses proper-lockfile)
+- `src/state-sync.ts` (200 lines): Automatic synchronization to derived views
+- `src/state-validator.ts` (280 lines): Consistency validation and recovery
+- `src/concurrency-manager.ts` (420 lines): Execution slot management and resource control
 
-### Requirement Clarification (NEW - 2026-02-05)
-- `src/requirement-clarification.ts` (300 lines): **NEW** - Main orchestrator for multi-round clarification
-- `src/clarification-state.ts` (150 lines): **NEW** - State management for clarification process
-- `src/confidence-evaluator.ts` (200 lines): **NEW** - Multi-dimensional confidence scoring
-- `src/question-generator.ts` (250 lines): **NEW** - Adaptive question generation targeting gaps
-- `test-clarification.js`: **NEW** - Test suite for clarification system
+### Requirement Clarification
+- `src/requirement-clarification.ts` (300 lines): Main orchestrator for multi-round clarification
+- `src/clarification-state.ts` (150 lines): State management for clarification process
+- `src/confidence-evaluator.ts` (200 lines): Multi-dimensional confidence scoring
+- `src/question-generator.ts` (250 lines): Adaptive question generation targeting gaps
+- `test-clarification.js`: Test suite for clarification system
 
 ### Workflow Scripts
-- `pm-workflow.js` (1950+ lines): **UPDATED** - PM coordination logic + approval management + section assignment + requirement clarification (now uses state-manager)
-- `agent-workflow.js` (290 lines): **UPDATED** - Sub-agent autonomous planning workflow with team context awareness
+- `pm-workflow.js` (1950+ lines): PM coordination logic + approval management + section assignment + requirement clarification (now uses state-manager)
+- `agent-workflow.js` (290 lines): Sub-agent autonomous planning workflow with team context awareness
 - `skill-aware-planning.js`: User-specified skill validation (dynamic discovery by agents)
-- `timeout-monitor.js`: **UPDATED** - Timeout detection and recovery (now uses state-manager)
-- `whiteboard.js` (610 lines): **UPDATED** - Shared state board with project structure display (now uses state-manager)
+- `timeout-monitor.js`: Timeout detection and recovery (now uses state-manager)
+- `whiteboard.js` (610 lines): Shared state board with project structure display (now uses state-manager)
 
 ### Migration & Tools
-- `scripts/migrate-state.js`: **NEW** - Automatic migration tool for existing projects
-- `test-team-context.js`: **NEW** - Test suite for team context awareness and section assignment
-- `test-clarification.js`: **NEW** - Test suite for requirement clarification system
+- `scripts/migrate-state.js`: Automatic migration tool for existing projects
+- `test-team-context.js`: Test suite for team context awareness and section assignment
+- `test-clarification.js`: Test suite for requirement clarification system
 
 ### Documentation
 - `SKILL.md` (1816 lines): Complete skill specification with all protocols
 - `PM_QUICKREF.md`: Quick reference card for PM pause protocol
 - `PM_CHECKLIST.md`: Detailed checklist for PM operations
 - `README.md`: User-facing quick start guide
-- `IMPLEMENTATION_SUMMARY.md`: **NEW** - Team context awareness implementation details
+- `IMPLEMENTATION_SUMMARY.md`: Team context awareness implementation details
 
 ### Configuration
 - `config/default-roles.yaml`: Default role templates for different task types (1711 lines, 41 roles, ~60KB)
@@ -240,12 +240,12 @@ When QA rejects a deliverable:
   - **Structure**: Skill categories, role definitions, team templates
   - **Decision**: Keeping unified - excellent performance, well-organized, easy to search
   - **Evaluation**: See `doc/default-roles-evaluation.md` for detailed analysis
-- `tsconfig.json`: **NEW** - TypeScript compiler configuration
-- `package.json`: **UPDATED** - Added proper-lockfile and typescript dependencies
+- `tsconfig.json`: TypeScript compiler configuration
+- `package.json`: Added proper-lockfile and typescript dependencies
 
 ### TypeScript Migration Strategy
 
-**Current Status**: Hybrid TypeScript/JavaScript codebase (as of 2026-02-04)
+**Current Status**: Hybrid TypeScript/JavaScript codebase
 
 **Approach**: Gradual migration with strategic prioritization
 
@@ -263,7 +263,7 @@ When QA rejects a deliverable:
 - `src/state.ts` - Backward compatibility layer
 - `src/index.ts` - Main entry point
 
-**JavaScript Modules** (Workflow Scripts - Migration Pending):
+**JavaScript Modules** (Workflow Scripts):
 - `pm-workflow.js` - PM coordination logic (1268 lines)
 - `agent-workflow.js` - Sub-agent workflow (260 lines)
 - `timeout-monitor.js` - Timeout detection (564 lines)
@@ -273,9 +273,9 @@ When QA rejects a deliverable:
 - `config/validation-templates/*.js` - QA validation templates (5 files)
 
 **Migration Priority**:
-1. ✅ **Phase 1 Complete**: Core infrastructure (state management, phase machine, QA system)
-2. 🔄 **Phase 2 In Progress**: Workflow orchestration (pm-workflow.js, agent-workflow.js)
-3. ⏳ **Phase 3 Planned**: Utilities and templates (timeout-monitor.js, validation templates)
+1. Core infrastructure (state management, phase machine, QA system)
+2. Workflow orchestration (pm-workflow.js, agent-workflow.js)
+3. Utilities and templates (timeout-monitor.js, validation templates)
 
 **Rationale**:
 - **TypeScript first** for new modules requiring type safety (state management, concurrency)
@@ -299,7 +299,7 @@ All projects are tracked in:
 ```
 projects/
 ├── {project-id}/
-│   ├── state.json            # NEW: Single source of truth
+│   ├── state.json            # Single source of truth
 │   ├── {project-id}.md       # Derived: Human-readable project log
 │   ├── agent-status.json     # Derived: Real-time agent states
 │   ├── WHITEBOARD.md         # Derived: Team communication board
@@ -309,7 +309,7 @@ projects/
 
 ## Skill-Aware Planning
 
-**NEW: Dynamic Agent-Side Skill Discovery**
+**Dynamic Agent-Side Skill Discovery**
 
 Agents now discover and select skills dynamically at runtime instead of receiving pre-assigned skills from PM:
 
@@ -394,9 +394,9 @@ Check `projects/{project-id}/agent-status.json` for real-time agent states.
 
 ## State Management
 
-**NEW: Unified State Management System** (Implemented 2026-02-04)
+**Unified State Management System**
 
-The project now uses a **unified state management system** with a single source of truth:
+The project uses a **unified state management system** with a single source of truth:
 
 ### Architecture
 
@@ -424,7 +424,7 @@ projects/{project-id}/
 3. Config file: `~/.claude/config.json` → `projectsDirectory`
 4. Default: `path.join(process.cwd(), 'projects')`
 
-**Improved Robustness** (as of 2026-02-04):
+**Improved Robustness**:
 - `src/team.ts`: Uses `resolveProjectsDir()` helper with full fallback chain
 - `src/qa-validation-plan.ts`: Multi-path template loading (source, dist, env var)
 - `pm-workflow.js`: Uses state-manager's `resolveProjectsDir()` when available
@@ -643,26 +643,19 @@ Based on task type, deliverables are aggregated differently:
 3. **Dual-Layer QA**: Independent QA validation + PM final acceptance
 4. **Autonomous Planning**: Sub-agents plan → get approval → execute
 5. **Skill-Aware Assignment**: Automatic discovery and distribution of relevant skills
-6. **Unified State Management**: Single source of truth with automatic synchronization (NEW)
-7. **Dynamic Configuration**: No hardcoded paths, works on any computer (NEW)
+6. **Unified State Management**: Single source of truth with automatic synchronization
+7. **Dynamic Configuration**: No hardcoded paths, works on any computer
 
 ## Project Index
 
 This project has a pre-generated index for quick codebase understanding.
 
 - **Location:** `.claude-index/index.md`
-- **Last Updated:** 2026-02-04
 - **Index Version:** 2.0
 - **Total Files:** 45 files (~10,553 lines of code)
 - **Contents:** Project overview, architecture components, module dependencies, key exports, state schema
 
 **Usage:** Read `.claude-index/index.md` to quickly understand the project structure before making changes. The index provides a comprehensive navigation map of the codebase without needing to explore every file.
-
-**Key Updates (2026-02-04):**
-- Removed skill-discovery/ directory (now using dynamic agent-side discovery)
-- Added unified state management system documentation
-- Added phase state machine documentation
-- Updated file counts and line counts to reflect current state
 
 **Regenerate:** Say "regenerate index" or "更新索引" to update the index after major changes.
 

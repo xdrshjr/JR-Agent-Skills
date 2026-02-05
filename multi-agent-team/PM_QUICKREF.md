@@ -27,7 +27,7 @@ sessions_send(
 ```json
 {
   "status": "PAUSED",
-  "pausedAt": "2026-02-01T04:30:00Z",
+  "pausedAt": "2024-01-01T10:30:00Z",
   "reason": "...",
   "progress": "35%",
   "attemptedSolutions": [...]

@@ -88,20 +88,6 @@ projects/
 5. **Provide feedback** during milestones in SUPERVISED mode
 6. **Trust the process** - disputes and reworks are normal in teamwork
 
-## New Features
-
-### Requirement Clarification (2026-02-05)
-
-Before creating the team, the PM conducts an adaptive dialogue to clarify your requirements:
-
-- **2-3 rounds** of 5 questions each
-- **Adaptive questioning** targeting unclear areas
-- **Confidence scoring** across 5 dimensions (scope, technical, deliverables, constraints, context)
-- **Understanding summaries** showing what's been clarified
-- **Enriched request** with structured clarifications for better team planning
-
-See [REQUIREMENT_CLARIFICATION.md](REQUIREMENT_CLARIFICATION.md) for details.
-
 ## Configuration
 
 ### Project Directory

@@ -179,7 +179,7 @@ All → PM:            Blocker escalation (when paused)
 
 ## Skill-Aware Planning
 
-**NEW: Dynamic Agent-Side Skill Discovery**
+Dynamic Agent-Side Skill Discovery
 
 Agents now discover and select skills dynamically at runtime instead of receiving pre-assigned skills from PM.
 
@@ -219,7 +219,7 @@ If a skill is specified:
 
 ## Requirement Clarification Phase
 
-**NEW: Multi-Round Requirement Clarification System (Added 2026-02-05)**
+**Multi-Round Requirement Clarification System**
 
 Before creating the multi-agent team, the PM conducts a structured dialogue with the user to ensure requirements are well-understood. This prevents wasted effort and misaligned deliverables.
 
@@ -430,7 +430,7 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 3. **理解分配的章节/部分和团队上下文**
 4. 向 PM 汇报理解结果
 
-**团队上下文理解（NEW）**:
+**团队上下文理解**:
 - **你的分配章节**: 理解你负责的具体部分（不是完整的独立交付物）
 - **整体交付物**: 了解最终交付物的完整结构
 - **队友章节**: 查看其他队友负责的部分
@@ -653,7 +653,7 @@ For each task, the PM dynamically assembles a **3-person executor team + 1 indep
 | **Executor (x2)** | Core implementation, coding, writing, creation |
 | **QA/Verifier** | **Independent verification of all deliverables, validation planning, quality gate** |
 
-### Team Context Awareness (NEW - 2026-02-05)
+### Team Context Awareness
 
 **Problem Solved**: Agents now understand they are contributing **part of a larger whole** rather than creating complete standalone deliverables.
 
@@ -837,22 +837,22 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       "type": "executor",
       "status": "VERIFIED",
       "statusHistory": [
-        {"status": "RUNNING", "at": "2026-02-01T04:00:00Z"},
-        {"status": "PENDING_VERIFICATION", "at": "2026-02-01T04:30:00Z"},
-        {"status": "UNDER_VERIFICATION", "at": "2026-02-01T04:35:00Z"},
-        {"status": "VERIFIED", "at": "2026-02-01T04:45:00Z"}
+        {"status": "RUNNING", "at": "2024-01-01T10:00:00Z"},
+        {"status": "PENDING_VERIFICATION", "at": "2024-01-01T10:30:00Z"},
+        {"status": "UNDER_VERIFICATION", "at": "2024-01-01T10:35:00Z"},
+        {"status": "VERIFIED", "at": "2024-01-01T10:45:00Z"}
       ],
       "assignedSection": "Frontend UI & User Experience",
       "sectionOrder": 2,
       "dependencies": ["Backend Developer"],
       "deliverable": {
         "path": "/projects/pi-agent-analysis/frontend.md",
-        "submittedToQA": "2026-02-01T04:30:00Z",
-        "verifiedByQA": "2026-02-01T04:45:00Z"
+        "submittedToQA": "2024-01-01T10:30:00Z",
+        "verifiedByQA": "2024-01-01T10:45:00Z"
       },
       "validationResults": {
         "passed": true,
-        "verifiedAt": "2026-02-01T04:45:00Z",
+        "verifiedAt": "2024-01-01T10:45:00Z",
         "retryCount": 0,
         "issues": []
       },
@@ -864,21 +864,21 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       "type": "executor",
       "status": "RETURNED_FOR_FIX",
       "statusHistory": [
-        {"status": "RUNNING", "at": "2026-02-01T04:00:00Z"},
-        {"status": "PENDING_VERIFICATION", "at": "2026-02-01T04:30:00Z"},
-        {"status": "UNDER_VERIFICATION", "at": "2026-02-01T04:35:00Z"},
-        {"status": "RETURNED_FOR_FIX", "at": "2026-02-01T04:40:00Z"}
+        {"status": "RUNNING", "at": "2024-01-01T10:00:00Z"},
+        {"status": "PENDING_VERIFICATION", "at": "2024-01-01T10:30:00Z"},
+        {"status": "UNDER_VERIFICATION", "at": "2024-01-01T10:35:00Z"},
+        {"status": "RETURNED_FOR_FIX", "at": "2024-01-01T10:40:00Z"}
       ],
       "assignedSection": "Backend API & Business Logic",
       "sectionOrder": 1,
       "dependencies": [],
       "deliverable": {
         "path": "/projects/pi-agent-analysis/api.md",
-        "submittedToQA": "2026-02-01T04:30:00Z"
+        "submittedToQA": "2024-01-01T10:30:00Z"
       },
       "validationResults": {
         "passed": false,
-        "failedAt": "2026-02-01T04:40:00Z",
+        "failedAt": "2024-01-01T10:40:00Z",
         "retryCount": 1,
         "maxRetries": 3,
         "issues": [
@@ -889,7 +889,7 @@ PM must maintain `projects/{project-id}/agent-status.json`:
             "fixGuidance": "Add try-catch blocks for all API endpoints"
           }
         ],
-        "fixDeadline": "2026-02-01T05:00:00Z"
+        "fixDeadline": "2024-01-01T11:00:00Z"
       },
       "progress": "80%"
     }
@@ -927,16 +927,16 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       "type": "qa",
       "status": "QA_VALIDATING",
       "statusHistory": [
-        {"status": "RUNNING", "at": "2026-02-01T04:00:00Z"},
-        {"status": "QA_PLANNING", "at": "2026-02-01T04:05:00Z"},
-        {"status": "QA_VALIDATING", "at": "2026-02-01T04:15:00Z"}
+        {"status": "RUNNING", "at": "2024-01-01T10:00:00Z"},
+        {"status": "QA_PLANNING", "at": "2024-01-01T10:05:00Z"},
+        {"status": "QA_VALIDATING", "at": "2024-01-01T10:15:00Z"}
       ],
       "assignedSection": "Quality Assurance & Validation (All Sections)",
       "sectionOrder": null,
       "dependencies": [],
       "validationPlan": {
         "planApproved": true,
-        "approvedAt": "2026-02-01T04:15:00Z",
+        "approvedAt": "2024-01-01T10:15:00Z",
         "approvedBy": "PM",
         "planDetails": {
           "criteria": ["functionality", "completeness", "quality"],
@@ -953,14 +953,14 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       "executorResults": {
         "agent:main:subagent:exec1": {
           "status": "VERIFIED",
-          "verifiedAt": "2026-02-01T04:45:00Z",
+          "verifiedAt": "2024-01-01T10:45:00Z",
           "retryCount": 0
         },
         "agent:main:subagent:exec2": {
           "status": "RETURNED_FOR_FIX",
-          "failedAt": "2026-02-01T04:40:00Z",
+          "failedAt": "2024-01-01T10:40:00Z",
           "retryCount": 1,
-          "returnedAt": "2026-02-01T04:40:00Z"
+          "returnedAt": "2024-01-01T10:40:00Z"
         },
         "agent:main:subagent:exec3": {
           "status": "PENDING",
@@ -978,7 +978,7 @@ PM must maintain `projects/{project-id}/agent-status.json`:
 
 **Note on QA Section Assignment**: QA agents receive the special section "Quality Assurance & Validation (All Sections)" to indicate they validate all executor sections but don't create content themselves.
 
-#### New State Schema Fields (Added 2026-02-05)
+#### State Schema Fields
 
 **Team Context Awareness Fields**:
 
@@ -1059,7 +1059,7 @@ PM must maintain `projects/{project-id}/agent-status.json`:
     "returnedForFix": 1
   },
   "milestones": {
-    "projectStarted": "2026-02-01T04:00:00Z",
+    "projectStarted": "2024-01-01T10:00:00Z",
     "executionPhaseComplete": null,
     "validationPhaseComplete": null,
     "projectDelivered": null
@@ -1221,7 +1221,7 @@ Mark the agent as PAUSED in the status file.
       "userDecision": {
         "chosenOption": "A",
         "providedResources": ["BRAVE_API_KEY: xxx"],
-        "timestamp": "2026-02-01T04:35:00Z"
+        "timestamp": "2024-01-01T10:35:00Z"
       },
       "previousStatus": "PAUSED"
     }
@@ -1989,7 +1989,7 @@ Issues: {none / summary}
 
 ---
 
-### Team Coordination via WHITEBOARD (NEW - 2026-02-05)
+### Team Coordination via WHITEBOARD
 
 The WHITEBOARD is a shared communication board that provides real-time visibility into team progress and project structure.
 
@@ -2215,7 +2215,7 @@ projects/
 
 **When agent is PAUSED**:
 ```markdown
-## 2026-02-01 04:30 - Agent PAUSED
+## 2024-01-01 10:30 - Agent PAUSED
 
 - Agent: PiAgent-Researcher
 - Reason: web_search API unavailable
@@ -2226,7 +2226,7 @@ projects/
 
 **When agent is RESUMED**:
 ```markdown
-## 2026-02-01 04:35 - Agent RESUMED
+## 2024-01-01 10:35 - Agent RESUMED
 
 - Agent: PiAgent-Researcher
 - User decision: Provided BRAVE_API_KEY

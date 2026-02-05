@@ -91,18 +91,18 @@ sessions_send(
       "label": "PiAgent-Researcher",
       "role": "Research Analyst", 
       "status": "PAUSED",
-      "pausedAt": "2026-02-01T04:30:00Z",
+      "pausedAt": "2024-01-01T10:30:00Z",
       "reason": "web_search API unavailable - Brave API key required",
       "progress": "35%",
       "deliverables": ["/projects/pi-agent-analysis/research.md (partial)"],
       "attemptedSolutions": [
         {
-          "time": "2026-02-01T04:25:00Z",
+          "time": "2024-01-01T10:25:00Z",
           "method": "tried browser tool",
           "result": "failed - Chrome extension not connected"
         },
         {
-          "time": "2026-02-01T04:28:00Z", 
+          "time": "2024-01-01T10:28:00Z", 
           "method": "tried curl fallback",
           "result": "failed - Cloudflare protection"
         }
@@ -239,11 +239,11 @@ sessions_send(
       "userDecision": {
         "chosenOption": "A",
         "providedResources": ["BRAVE_API_KEY: xxx"],
-        "timestamp": "2026-02-01T04:35:00Z",
+        "timestamp": "2024-01-01T10:35:00Z",
         "notes": "user provided API key and asked to retry with reduced scope"
       },
       "previousStatus": "PAUSED",
-      "resumedAt": "2026-02-01T04:36:00Z"
+      "resumedAt": "2024-01-01T10:36:00Z"
     }
   }
 }
@@ -399,7 +399,7 @@ sessions_spawn(
 每次暂停/恢复必须记录：
 
 ```markdown
-## 2026-02-01 04:30 - Agent PAUSED
+## 2024-01-01 10:30 - Agent PAUSED
 
 - Agent: {label}
 - Role: {role}
@@ -410,13 +410,13 @@ sessions_spawn(
 - User notified: {yes/no}
 - Status file updated: {yes/no}
 
-## 2026-02-01 04:35 - User Decision Received
+## 2024-01-01 10:35 - User Decision Received
 
 - Chosen option: {A/B/C/Custom/Abort}
 - Provided resources: {list}
 - User notes: {notes}
 
-## 2026-02-01 04:36 - Agent RESUMED
+## 2024-01-01 10:36 - Agent RESUMED
 
 - New session: {session_key}
 - Adjusted task: {summary}
