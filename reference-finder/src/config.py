@@ -1,134 +1,97 @@
 """Configuration management for reference-finder."""
 
-import json
-import logging
 import os
-from dataclasses import dataclass
+import re
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
-logger = logging.getLogger('reference_finder.config')
-
-
-class ConfigError(Exception):
-    """Configuration-related errors."""
-    pass
+import yaml
 
 
-@dataclass
 class Config:
-    """Configuration for reference-finder."""
+    """Configuration manager with environment variable support."""
     
-    # API Keys
-    brave_api_key: str
-    
-    # Search settings
-    default_limit: int = 10
-    timeout: int = 30
-    
-    # Academic domains for filtering
-    academic_domains: List[str] = None
-    
-    # Output settings
-    default_format: str = 'text'
-    
-    def __post_init__(self):
-        if self.academic_domains is None:
-            self.academic_domains = [
-                'arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov',
-                'ieee.org', 'acm.org', 'jstor.org', 'sciencedirect.com',
-                'springer.com', 'wiley.com', 'nature.com', 'science.org',
-                'cell.com', 'pnas.org', 'edu', 'ac.uk', 'ac.jp', 'ac.cn'
-            ]
-    
-    @classmethod
-    def load(cls, config_path: Optional[str] = None) -> 'Config':
+    def __init__(self, config_path: str = "config.yaml"):
+        """Initialize configuration from YAML file.
+        
+        Args:
+            config_path: Path to the configuration YAML file
         """
-        Load configuration from file or environment.
+        self._config_path = Path(config_path)
+        self._data: Dict[str, Any] = {}
+        self._load()
+    
+    def _load(self) -> None:
+        """Load configuration from file."""
+        if not self._config_path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {self._config_path}")
         
-        Priority:
-        1. Explicit config file path
-        2. REF_FINDER_CONFIG environment variable
-        3. ~/.config/reference-finder/config.json
-        4. ./config.json
-        5. Environment variables only
+        with open(self._config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # Substitute environment variables
+        content = self._substitute_env_vars(content)
+        
+        self._data = yaml.safe_load(content) or {}
+    
+    def _substitute_env_vars(self, content: str) -> str:
+        """Substitute environment variables in content.
+        
+        Supports ${VAR_NAME} syntax.
         """
-        config_data = {}
+        pattern = r'\$\{([^}]+)\}'
         
-        # Try to load from config file
-        file_paths = []
+        def replace_var(match):
+            var_name = match.group(1)
+            return os.environ.get(var_name, match.group(0))
         
-        if config_path:
-            file_paths.append(Path(config_path))
-        
-        env_config = os.getenv('REF_FINDER_CONFIG')
-        if env_config:
-            file_paths.append(Path(env_config))
-        
-        file_paths.extend([
-            Path.home() / '.config' / 'reference-finder' / 'config.json',
-            Path.cwd() / 'config.json',
-            Path(__file__).parent.parent / 'config.json',
-        ])
-        
-        for path in file_paths:
-            if path.exists():
-                logger.debug(f"Loading config from: {path}")
-                try:
-                    with open(path, 'r', encoding='utf-8') as f:
-                        config_data = json.load(f)
-                    break
-                except (json.JSONDecodeError, IOError) as e:
-                    logger.warning(f"Failed to load config from {path}: {e}")
-        
-        # Override with environment variables
-        brave_api_key = os.getenv('BRAVE_API_KEY') or config_data.get('brave_api_key')
-        
-        if not brave_api_key:
-            raise ConfigError(
-                "Brave API key not found. Set BRAVE_API_KEY environment variable "
-                "or add 'brave_api_key' to config file."
-            )
-        
-        # Build config with defaults and overrides
-        return cls(
-            brave_api_key=brave_api_key,
-            default_limit=config_data.get('default_limit', 10),
-            timeout=config_data.get('timeout', 30),
-            academic_domains=config_data.get('academic_domains'),
-            default_format=config_data.get('default_format', 'text'),
-        )
+        return re.sub(pattern, replace_var, content)
     
-    def save(self, path: Optional[str] = None) -> None:
-        """Save configuration to file."""
-        if path is None:
-            config_dir = Path.home() / '.config' / 'reference-finder'
-            config_dir.mkdir(parents=True, exist_ok=True)
-            path = config_dir / 'config.json'
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value by dot-separated key.
         
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        Args:
+            key: Dot-separated key (e.g., "model.name")
+            default: Default value if key not found
+            
+        Returns:
+            Configuration value or default
+        """
+        keys = key.split(".")
+        value = self._data
         
-        config_data = {
-            'brave_api_key': self.brave_api_key,
-            'default_limit': self.default_limit,
-            'timeout': self.timeout,
-            'academic_domains': self.academic_domains,
-            'default_format': self.default_format,
-        }
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return default
         
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(config_data, f, indent=2)
-        
-        logger.info(f"Config saved to: {path}")
+        return value
     
-    def validate(self) -> None:
-        """Validate configuration values."""
-        if not self.brave_api_key or len(self.brave_api_key) < 10:
-            raise ConfigError("Invalid Brave API key")
+    def get_model_config(self) -> Dict[str, Any]:
+        """Get model configuration section.
         
-        if self.default_limit < 1 or self.default_limit > 100:
-            raise ConfigError("default_limit must be between 1 and 100")
+        Returns:
+            Dictionary with model configuration
+        """
+        return self.get("model", {})
+    
+    def get_proxy_config(self) -> Dict[str, Any]:
+        """Get proxy configuration section.
         
-        if self.timeout < 1 or self.timeout > 300:
-            raise ConfigError("timeout must be between 1 and 300 seconds")
+        Returns:
+            Dictionary with proxy configuration
+        """
+        return self.get("proxy", {"enabled": False})
+    
+    def get_defaults(self) -> Dict[str, Any]:
+        """Get defaults configuration section.
+        
+        Returns:
+            Dictionary with defaults configuration
+        """
+        return self.get("defaults", {
+            "min_papers_per_domain": 20,
+            "max_papers_per_domain": 30,
+            "output_dir": "./references"
+        })
