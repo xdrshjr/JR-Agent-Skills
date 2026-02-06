@@ -83,7 +83,7 @@ class TestGeminiClient:
         mock_response.json.return_value = {
             "candidates": [{
                 "content": {
-                    "parts": [{"text": '[{"key": "value"}]}']
+                    "parts": [{"text": '[{"key": "value"}]'}]
                 }
             }]
         }

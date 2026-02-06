@@ -90,8 +90,8 @@ class TestMarkdownReporter:
             assert "Generated:" in content
             
             # Check summary
-            assert "Total Domains: 2" in content
-            assert "Total Papers: 3" in content
+            assert "**Total Domains:** 2" in content
+            assert "**Total Papers:** 3" in content
             
             # Check domain sections
             assert "## Machine Learning" in content
@@ -124,7 +124,7 @@ class TestMarkdownReporter:
             with open(result_path, "r") as f:
                 content = f.read()
             
-            assert "Error: Failed to generate papers" in content
+            assert "> **Error:** Failed to generate papers" in content
     
     def test_generate_empty_references(self):
         """Test with empty references."""
@@ -138,8 +138,8 @@ class TestMarkdownReporter:
             with open(result_path, "r") as f:
                 content = f.read()
             
-            assert "Total Domains: 0" in content
-            assert "Total Papers: 0" in content
+            assert "**Total Domains:** 0" in content
+            assert "**Total Papers:** 0" in content
     
     def test_build_paper_entry_formatting(self):
         """Test individual paper entry formatting."""
@@ -156,11 +156,11 @@ class TestMarkdownReporter:
         entry = reporter._build_paper_entry(1, paper)
         
         assert "### 1. Test Paper" in entry
-        assert "Authors: Author 1, Author 2" in entry
-        assert "Year: 2023" in entry
-        assert "Venue: Test Conference" in entry
-        assert "Abstract: This is the abstract." in entry
-        assert "Relevance: This is relevant." in entry
+        assert "**Authors:** Author 1, Author 2" in entry
+        assert "**Year:** 2023" in entry
+        assert "**Venue:** Test Conference" in entry
+        assert "**Abstract:** This is the abstract." in entry
+        assert "**Relevance:** This is relevant." in entry
     
     def test_build_paper_entry_missing_fields(self):
         """Test paper entry with missing fields."""
