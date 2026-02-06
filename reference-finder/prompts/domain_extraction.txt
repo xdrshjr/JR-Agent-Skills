@@ -1,0 +1,171 @@
+# Domain Extraction Prompt Template
+
+You are an expert research assistant specializing in academic literature search.
+Your task is to analyze a research topic and extract key research domains that
+will help find relevant academic papers.
+
+## Input
+
+Research Topic: {{TOPIC}}
+
+## Your Task
+
+1. Analyze the research topic and identify the main research areas, subfields,
+   and key concepts involved.
+
+2. Extract 3-5 distinct research domains that are most relevant to this topic.
+
+3. For each domain, provide:
+   - Domain name (clear, concise label)
+   - Confidence score (0.0-1.0)
+   - 5-10 relevant keywords and synonyms
+   - A search query optimized for academic databases
+
+## Output Format
+
+Return your analysis as a JSON array:
+
+```json
+[
+  {
+    "name": "Domain Name",
+    "confidence": 0.95,
+    "keywords": [
+      "keyword1",
+      "keyword2",
+      "keyword3",
+      "synonym1",
+      "synonym2"
+    ],
+    "search_query": "\"primary term\" AND (\"related term\" OR \"alternative\")"
+  }
+]
+```
+
+## Guidelines
+
+1. **Domain Names**: Use standard academic terminology (e.g., "Machine Learning",
+   "Natural Language Processing", "Computer Vision")
+
+2. **Confidence Scoring**:
+   - 0.9-1.0: Core domain, clearly central to the topic
+   - 0.7-0.89: Important related domain
+   - 0.5-0.69: Secondary or supporting domain
+   - <0.5: Weak relevance
+
+3. **Keywords**: Include:
+   - Technical terms specific to the domain
+   - Common abbreviations and acronyms
+   - Related techniques and methods
+   - Synonyms used in literature
+
+4. **Search Queries**: Construct queries that will work well in:
+   - Google Scholar
+   - arXiv
+   - Semantic Scholar
+   - PubMed
+
+   Use boolean operators (AND, OR) and quotes for phrase matching.
+
+## Examples
+
+### Example 1
+Topic: "How can reinforcement learning improve autonomous vehicle navigation?"
+
+Output:
+```json
+[
+  {
+    "name": "Reinforcement Learning",
+    "confidence": 0.98,
+    "keywords": [
+      "reinforcement learning",
+      "RL",
+      "deep reinforcement learning",
+      "policy gradient",
+      "Q-learning",
+      "actor-critic",
+      "reward shaping"
+    ],
+    "search_query": "\"reinforcement learning\" AND (\"autonomous vehicle\" OR \"self-driving car\")"
+  },
+  {
+    "name": "Autonomous Vehicles",
+    "confidence": 0.95,
+    "keywords": [
+      "autonomous vehicle",
+      "self-driving car",
+      "automated driving",
+      "vehicle automation",
+      "ADAS",
+      "navigation"
+    ],
+    "search_query": "\"autonomous vehicle\" AND (\"reinforcement learning\" OR \"machine learning\")"
+  },
+  {
+    "name": "Robotics",
+    "confidence": 0.75,
+    "keywords": [
+      "robotics",
+      "mobile robot",
+      "path planning",
+      "motion planning",
+      "robot navigation"
+    ],
+    "search_query": "\"robot navigation\" AND \"reinforcement learning\""
+  }
+]
+```
+
+### Example 2
+Topic: "transformer architectures for medical image segmentation"
+
+Output:
+```json
+[
+  {
+    "name": "Vision Transformers",
+    "confidence": 0.97,
+    "keywords": [
+      "vision transformer",
+      "ViT",
+      "transformer",
+      "attention mechanism",
+      "self-attention",
+      "medical vision transformer"
+    ],
+    "search_query": "\"vision transformer\" AND \"medical image segmentation\""
+  },
+  {
+    "name": "Medical Image Analysis",
+    "confidence": 0.94,
+    "keywords": [
+      "medical image segmentation",
+      "semantic segmentation",
+      "image analysis",
+      "radiology",
+      "MRI segmentation",
+      "CT segmentation"
+    ],
+    "search_query": "\"medical image segmentation\" AND \"transformer\""
+  },
+  {
+    "name": "Deep Learning",
+    "confidence": 0.85,
+    "keywords": [
+      "deep learning",
+      "neural networks",
+      "CNN",
+      "convolutional neural network",
+      "U-Net"
+    ],
+    "search_query": "\"deep learning\" AND \"medical image segmentation\""
+  }
+]
+```
+
+## Analysis
+
+Now analyze the following topic and provide your output:
+
+Research Topic: {{TOPIC}}

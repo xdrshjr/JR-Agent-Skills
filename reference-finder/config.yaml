@@ -1,0 +1,198 @@
+# Reference Finder Configuration Template
+# Copy this file to config.yaml and customize for your needs
+
+# =============================================================================
+# LLM Configuration
+# =============================================================================
+llm:
+  # Provider selection: openai, anthropic, google, local
+  provider: openai
+  
+  # Model selection - see documentation for recommended models
+  model: gpt-4o-mini
+  
+  # API key (recommended: use environment variable)
+  api_key: ${OPENAI_API_KEY}
+  
+  # Optional: Custom base URL (for Azure, proxies, etc.)
+  # base_url: https://api.openai.com/v1
+  
+  # Optional: Proxy configuration
+  # proxy:
+  #   http: http://proxy.example.com:8080
+  #   https: https://proxy.example.com:8080
+  
+  # Model parameters
+  temperature: 0.3      # 0.0 = focused, 1.0 = creative
+  max_tokens: 2000      # Maximum response length
+  timeout: 30           # Request timeout in seconds
+
+# =============================================================================
+# Literature Search Sources
+# =============================================================================
+sources:
+  # Google Scholar (requires SerpAPI for reliable access)
+  google_scholar:
+    enabled: true
+    serpapi_key: ${SERPAPI_KEY}  # Get from serpapi.com
+    max_results: 20
+    # Optional: Use custom scraping (slower, less reliable)
+    # use_scraper: false
+  
+  # arXiv (no API key required)
+  arxiv:
+    enabled: true
+    max_results: 20
+    sort_by: relevance      # Options: relevance, lastUpdatedDate, submittedDate
+    sort_order: descending  # Options: ascending, descending
+  
+  # Semantic Scholar (free API key recommended)
+  semantic_scholar:
+    enabled: true
+    api_key: ${SEMANTIC_SCHOLAR_API_KEY}  # Get from semanticscholar.org
+    max_results: 20
+    include_citations: true
+    include_references: false
+  
+  # PubMed/MEDLINE (free API key recommended for higher limits)
+  pubmed:
+    enabled: true
+    api_key: ${PUBMED_API_KEY}  # Get from ncbi.nlm.nih.gov
+    email: your-email@example.com  # Required by NCBI
+    max_results: 20
+    retmode: json  # Options: json, xml
+
+# =============================================================================
+# Default Search Settings
+# =============================================================================
+search:
+  # Default number of results per source
+  default_limit: 10
+  
+  # Default year range (papers from last N years)
+  year_range: 10
+  
+  # Include preprints (arXiv, bioRxiv, etc.)
+  include_preprints: true
+  
+  # Minimum citation count filter (0 to disable)
+  min_citations: 0
+  
+  # Check if PDF is available
+  check_pdf_available: true
+  
+  # Rate limiting (seconds between requests)
+  rate_limit_delay: 0.5
+  max_requests_per_minute: 60
+  
+  # Retry configuration
+  max_retries: 3
+  retry_delay: 1.0
+
+# =============================================================================
+# Citation Formatting
+# =============================================================================
+citation:
+  # Default citation style: apa, mla, chicago, ieee, vancouver
+  default_style: apa
+  
+  # Include DOI in citations
+  include_doi: true
+  
+  # Include URL for open access papers
+  include_url: true
+  
+  # Author name format
+  author_format: full      # Options: full, initials, last_only
+  max_authors: 6           # Use "et al." after N authors
+  
+  # Fallback style if requested style fails
+  fallback_style: apa
+
+# =============================================================================
+# Domain Extraction
+# =============================================================================
+domain_extraction:
+  # Maximum number of domains to extract
+  max_domains: 5
+  
+  # Minimum confidence threshold (0.0 - 1.0)
+  min_confidence: 0.5
+  
+  # Number of keywords per domain
+  keywords_per_domain: 10
+  
+  # Custom prompt template (optional)
+  # prompt_template: prompts/custom_domain_extraction.txt
+
+# =============================================================================
+# Deduplication
+# =============================================================================
+deduplication:
+  # Method: exact, fuzzy, semantic
+  method: fuzzy
+  
+  # Threshold for fuzzy matching (0.0 - 1.0)
+  similarity_threshold: 0.85
+  
+  # Fields to compare for deduplication
+  fields:
+    - doi
+    - title
+    - authors
+    - year
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+output:
+  # Default output directory
+  output_dir: ./references
+  
+  # Create subdirectories by topic
+  organize_by_topic: true
+  
+  # Save raw search results (for debugging)
+  save_raw: true
+  
+  # Generate summary report
+  generate_report: true
+  
+  # File naming template
+  # Available variables: {topic}, {date}, {style}, {format}
+  filename_template: "{topic}_{date}.{format}"
+  
+  # Date format in filenames
+  date_format: "%Y%m%d"
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  # Log level: debug, info, warning, error
+  level: info
+  
+  # Log to file
+  file: reference_finder.log
+  
+  # Console output
+  console: true
+  
+  # Format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# =============================================================================
+# Cache Settings
+# =============================================================================
+cache:
+  # Enable caching of search results
+  enabled: true
+  
+  # Cache directory
+  directory: .cache
+  
+  # Cache expiration (hours)
+  ttl: 24
+  
+  # Maximum cache size (MB)
+  max_size: 100

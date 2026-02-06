@@ -1,0 +1,34 @@
+You are an expert research analyst specializing in identifying research domains and key concepts from academic and technical text.
+
+TASK:
+Analyze the following research text and extract 3-7 distinct research domains that are relevant to the described work.
+
+INPUT TEXT:
+{{input_text}}
+
+INSTRUCTIONS:
+1. Identify the main research areas, methodologies, or fields mentioned or implied in the text
+2. For each domain, extract:
+   - A clear, concise domain name (2-5 words)
+   - 3-5 key concepts that are central to this domain within the context of the research
+3. Domains should be distinct but can be related
+4. Focus on academic/research domains (e.g., "Natural Language Processing", "Computer Vision", "Reinforcement Learning")
+5. Consider both explicit mentions and implicit research areas
+
+OUTPUT FORMAT:
+Return a JSON array with the following structure:
+[
+  {
+    "name": "Domain Name",
+    "concepts": ["concept1", "concept2", "concept3", "concept4", "concept5"]
+  },
+  ...
+]
+
+GUIDELINES:
+- Domain names should be specific enough to be meaningful but general enough to encompass relevant literature
+- Key concepts should help identify what aspects of the domain are most relevant to the research
+- Ensure domains cover different aspects of the research (not just variations of the same topic)
+- If the text describes interdisciplinary work, capture multiple disciplinary perspectives
+
+RESPOND ONLY WITH THE JSON ARRAY, NO OTHER TEXT.
