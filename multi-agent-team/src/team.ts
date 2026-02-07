@@ -4,6 +4,7 @@
  */
 
 import { sessions_spawn, sessions_send, sessions_list } from '../utils/moltbot-api';
+import { PowerDomain, LeaderRole, LeadershipConfig, buildLeaderSystemPrompt, routeAgentMessage } from './leadership';
 
 // Import phase state machine for validation
 let phaseStateMachine: any;
@@ -94,7 +95,7 @@ interface TimeoutEvent {
 
 interface Message {
   from: string;
-  to: string; // 'manager' or agent ID
+  to: string; // 'leader:planning' | 'leader:execution' | 'leader:quality' | agent ID
   type: 'progress' | 'deliverable' | 'collaboration' | 'dispute' | 'escalation';
   content: string;
   timestamp: Date;
@@ -135,6 +136,58 @@ export async function spawnTeamAgents(
 }
 
 /**
+ * Leader session (similar to AgentSession but for leadership council members)
+ */
+export interface LeaderSession {
+  id: string;
+  domain: PowerDomain;
+  roleName: string;
+  sessionKey: string;
+  status: 'active' | 'completed';
+}
+
+/**
+ * Spawn the 3 leadership council members
+ */
+export async function spawnLeaders(
+  projectId: string,
+  leadershipConfig: LeadershipConfig,
+  projectBrief: ProjectBrief
+): Promise<LeaderSession[]> {
+  const leaders: LeaderSession[] = [];
+
+  for (const leader of leadershipConfig.leaders) {
+    const systemPrompt = buildLeaderSystemPrompt(
+      leader,
+      leadershipConfig.leaders,
+      {
+        name: projectBrief.name,
+        description: projectBrief.description,
+        successCriteria: projectBrief.successCriteria
+          ? projectBrief.successCriteria.split('\n').filter(Boolean)
+          : undefined,
+      }
+    );
+
+    const spawnResult = await sessions_spawn({
+      task: systemPrompt,
+      label: `${projectId}-leader-${leader.domain}`,
+      runTimeoutSeconds: AGENT_TIMEOUT_SECONDS,
+    });
+
+    leaders.push({
+      id: `leader-${leader.domain}`,
+      domain: leader.domain,
+      roleName: leader.roleName,
+      sessionKey: spawnResult.childSessionKey,
+      status: 'active',
+    });
+  }
+
+  return leaders;
+}
+
+/**
  * Build system prompt for an agent
  */
 function buildAgentSystemPrompt(
@@ -146,7 +199,7 @@ function buildAgentSystemPrompt(
   const teammates = allRoles.filter(r => r.name !== agentRole.name);
 
   return `
-You are ${agentRole.name} on a 3-person project team managed by a Project Manager (PM).
+You are ${agentRole.name} on a 3-person project team coordinated by a Leadership Council of 3 leaders.
 
 ## Your Identity
 
@@ -205,8 +258,8 @@ Before you start planning, you MUST discover what skills are available in your e
 1. Use the Skill tool with \`skill: "find-skills"\` to discover available skills
 2. Review the list of available skills and their capabilities
 3. Select 2-3 skills that match your role and expertise
-4. Report your selection to PM with justification
-5. Wait for PM approval before proceeding
+4. Report your selection to the Planning Authority Leader with justification
+5. Wait for Planning Authority Leader approval before proceeding
 
 **Your Role:** ${agentRole.name}
 **Your Expertise:** ${agentRole.expertise}
@@ -221,7 +274,7 @@ Before you start planning, you MUST discover what skills are available in your e
 1. [skill-name]: [why it matches my role]
 2. [skill-name]: [why it matches my role]
 
-Awaiting PM approval to proceed."
+Awaiting Planning Authority Leader approval to proceed."
 
 ` : ''}
 ## Team Coordination Board (WHITEBOARD)
@@ -253,34 +306,47 @@ Awaiting PM approval to proceed."
 ${enableSkillDiscovery ? `**Phase 0: Skill Discovery (5 minutes)**
 - Discover available skills using find-skills
 - Select skills matching your role
-- Report to PM and wait for approval
+- Report to Planning Authority Leader and wait for approval
 
 ` : ''}**Phase 1: Understand Requirements (10 minutes)**
 - Analyze your assigned task
 - Ask clarifying questions if needed
-- Report understanding to PM
+- Report understanding to Planning Authority Leader
 
 **Phase 2: Plan Approach (15 minutes)**
 - Design your implementation plan${enableSkillDiscovery ? '\n- Include selected skills in your plan' : ''}
-- Submit plan to PM for approval
+- Submit plan to Planning Authority Leader for approval
 
 **Phase 3: Execute (Remaining time)**
 - Execute approved plan${enableSkillDiscovery ? ' with approved skills' : ''}
-- Report progress at milestones
-- Submit deliverable to QA
+- Report progress to Execution Authority Leader at milestones
+- Submit deliverable to QA (managed by Quality Authority Leader)
+
+## Leadership Council
+
+This project is led by a 3-member Leadership Council with separation of powers:
+- **Planning Authority Leader**: Handles requirements, plan approval, scope
+- **Execution Authority Leader**: Handles progress, resources, timeouts, blockers
+- **Quality Authority Leader**: Handles QA, validation, acceptance, final delivery
+
+Report to the appropriate leader based on your message type:
+- Plan submissions / scope questions → Planning Authority Leader
+- Progress updates / resource needs / blockers → Execution Authority Leader
+- Deliverable submissions / quality questions → Quality Authority Leader (via QA)
 
 ## Communication Rules
 
-### With PM
-- Report progress every 5 minutes
-- Escalate blockers immediately
-- Present deliverables when complete
+### With Leaders
+- Report progress to Execution Authority Leader every 5 minutes
+- Escalate blockers to Execution Authority Leader immediately
+- Submit plans to Planning Authority Leader for approval
+- Submit deliverables to QA Agent (Quality Authority Leader chain)
 
 ### With Teammates
 - Direct collaboration encouraged
 - Message directly for coordination
 - Dispute limit: 2 rounds max
-- If unresolved after 2 rounds → Escalate to PM
+- If unresolved after 2 rounds → Escalate to Execution Authority Leader
 
 ## Escalation Triggers
 - Cannot reach agreement after 2 discussion rounds
@@ -359,15 +425,18 @@ ${agents.map(agent => `
 
 1. Work independently on your assigned tasks
 2. Collaborate directly when dependencies arise
-3. Report progress to PM every 5 minutes
-4. Resolve disputes within 2 rounds, then escalate to PM
-5. Deliver on time
+3. Report progress to Execution Authority Leader every 5 minutes
+4. Report plan changes to Planning Authority Leader
+5. Resolve disputes within 2 rounds, then escalate to Execution Authority Leader
+6. Deliver on time
 
 ## Communication
 
-- **Team updates:** Send to PM
+- **Plan questions:** Contact Planning Authority Leader
+- **Progress updates / blockers:** Contact Execution Authority Leader
+- **Quality questions:** Contact Quality Authority Leader
 - **Direct collaboration:** Message teammate directly
-- **Disputes:** 2 rounds max, then PM decides
+- **Disputes:** 2 rounds max, then Execution Authority Leader decides
 
 ---
 
@@ -463,30 +532,41 @@ export async function resolveDispute(
 }
 
 /**
- * Make PM decision on dispute
+ * Make leadership decision on dispute
+ * The relevant domain leader makes the decision, other leaders may challenge
  */
 export async function makeDisputeDecision(
   dispute: Dispute,
   agentA: AgentSession,
   agentB: AgentSession,
   decision: string,
-  reasoning: string
+  reasoning: string,
+  decidingDomain: PowerDomain = PowerDomain.EXECUTION
 ): Promise<void> {
+  const domainLabels: Record<PowerDomain, string> = {
+    [PowerDomain.PLANNING]: 'Planning Authority Leader',
+    [PowerDomain.EXECUTION]: 'Execution Authority Leader',
+    [PowerDomain.QUALITY]: 'Quality Authority Leader',
+  };
+  const deciderLabel = domainLabels[decidingDomain];
+
   const decisionMessage = `
-**PM DECISION on: ${dispute.topic}**
+**${deciderLabel} DECISION on: ${dispute.topic}**
 
 **Decision:** ${decision}
 
 **Reasoning:** ${reasoning}
 
-This decision is final. Please proceed accordingly.
+This decision is made by the ${deciderLabel}. Other leaders may challenge this decision through the cross-check protocol.
+
+Please proceed accordingly.
 `;
-  
+
   await sessions_send({
     sessionKey: agentA.sessionKey,
     message: decisionMessage
   });
-  
+
   await sessions_send({
     sessionKey: agentB.sessionKey,
     message: decisionMessage
@@ -700,7 +780,7 @@ Your task has exceeded the time limit (30 minutes). Please:
    - Where you got stuck
    - What blocked you (if anything)
 
-The Project Manager will review and provide guidance shortly.
+The Execution Authority Leader will review and provide guidance shortly.
 
 **Do not continue working until you receive restart instructions.**
 `
@@ -958,7 +1038,7 @@ Your task has been terminated after ${MAX_RESTART_ATTEMPTS} restart attempts.
 
 **What this means:**
 - Your partial work (if any) will be incorporated as-is
-- The PM will work with other team members to complete the project
+- The Execution Authority Leader will work with other team members to complete the project
 - You do not need to do any further work on this task
 
 Thank you for your effort on this task.

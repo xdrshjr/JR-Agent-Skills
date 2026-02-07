@@ -13,6 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { withLock, getLockPath } from './state-lock';
+import { PowerDomain } from './leadership';
 
 /**
  * Generic workflow phases that apply to any agent/task
@@ -22,19 +23,36 @@ export enum WorkflowPhase {
   REQUIREMENT_UNDERSTANDING = 'requirement',     // 1: 需求理解
   SKILL_RESEARCH = 'skill_research',            // 2: Skill调研
   PLAN_DESIGN = 'plan_design',                  // 3: 方案规划
-  AWAITING_APPROVAL = 'awaiting_approval',      // 4: 等待PM批准 (CRITICAL CHECKPOINT)
+  AWAITING_APPROVAL = 'awaiting_approval',      // 4: 等待领导层审批 (CRITICAL CHECKPOINT)
   EXECUTION = 'execution',                      // 5: 执行
   COMPLETION = 'completion'                     // 6: 完成
 }
 
 /**
- * Approval state tracking (independent of role/task)
+ * Domain-level approval tracking
+ */
+export interface DomainApproval {
+  granted: boolean;
+  grantedBy: string | null;
+  grantedAt: number | null;
+}
+
+/**
+ * Multi-domain approval state tracking (separation of powers)
+ *
+ * Each approval checkpoint specifies a primary domain and optional co-signoff domains.
+ * All required domains must approve before the agent can proceed.
  */
 export interface ApprovalState {
   required: boolean;
+  primaryDomain: PowerDomain;
+  requiredSignoffs: PowerDomain[];
+  approvals: Record<string, DomainApproval>;  // keyed by PowerDomain value
+  crossCheckId?: string;
+  // Legacy compatibility: derived from domain approvals
   granted: boolean;
-  grantedBy: string | null;  // PM identifier
-  grantedAt: number | null;  // timestamp
+  grantedBy: string | null;  // Combined identifier
+  grantedAt: number | null;  // Latest approval timestamp
 }
 
 /**
@@ -98,6 +116,8 @@ export function mapStageToPhase(stage: string): WorkflowPhase | null {
     '方案规划': WorkflowPhase.PLAN_DESIGN,
     '等待批准': WorkflowPhase.AWAITING_APPROVAL,
     '等待PM批准': WorkflowPhase.AWAITING_APPROVAL,
+    '等待领导层审批': WorkflowPhase.AWAITING_APPROVAL,
+    '等待审批': WorkflowPhase.AWAITING_APPROVAL,
     '执行': WorkflowPhase.EXECUTION,
     '完成': WorkflowPhase.COMPLETION
   };
@@ -146,6 +166,55 @@ function saveAgentStatus(projectDir: string, status: any): void {
 }
 
 /**
+ * Create a default multi-domain approval state
+ */
+function createDefaultApprovalState(): ApprovalState {
+  return {
+    required: false,
+    primaryDomain: PowerDomain.PLANNING,
+    requiredSignoffs: [PowerDomain.EXECUTION],
+    approvals: {
+      [PowerDomain.PLANNING]: { granted: false, grantedBy: null, grantedAt: null },
+      [PowerDomain.EXECUTION]: { granted: false, grantedBy: null, grantedAt: null },
+      [PowerDomain.QUALITY]: { granted: false, grantedBy: null, grantedAt: null },
+    },
+    granted: false,
+    grantedBy: null,
+    grantedAt: null,
+  };
+}
+
+/**
+ * Check if all required domain approvals are granted
+ */
+export function isFullyApproved(approval: ApprovalState): boolean {
+  const requiredDomains = [approval.primaryDomain, ...approval.requiredSignoffs];
+  return requiredDomains.every((domain) => {
+    const domainApproval = approval.approvals[domain];
+    return domainApproval && domainApproval.granted;
+  });
+}
+
+/**
+ * Sync legacy granted/grantedBy/grantedAt fields from domain approvals
+ */
+function syncLegacyApprovalFields(approval: ApprovalState): void {
+  const fullyApproved = isFullyApproved(approval);
+  approval.granted = fullyApproved;
+
+  if (fullyApproved) {
+    const grantedDomains = Object.entries(approval.approvals)
+      .filter(([, v]) => v.granted)
+      .map(([k, v]) => ({ domain: k, ...v }));
+    approval.grantedBy = grantedDomains.map((d) => `${d.domain}:${d.grantedBy}`).join(', ');
+    approval.grantedAt = Math.max(...grantedDomains.map((d) => d.grantedAt || 0));
+  } else {
+    approval.grantedBy = null;
+    approval.grantedAt = null;
+  }
+}
+
+/**
  * Initialize phase state for an agent
  */
 export async function initializePhaseState(
@@ -167,12 +236,7 @@ export async function initializePhaseState(
       currentPhase: initialPhase,
       previousPhase: null,
       phaseStartTime: Date.now(),
-      approval: {
-        required: false,
-        granted: false,
-        grantedBy: null,
-        grantedAt: null
-      },
+      approval: createDefaultApprovalState(),
       transitionHistory: []
     };
 
@@ -223,12 +287,17 @@ export function validatePhaseTransition(
     };
   }
 
-  // Rule 2: CRITICAL - Block execution without approval
+  // Rule 2: CRITICAL - Block execution without full leadership approval
   if (to === WorkflowPhase.EXECUTION) {
-    if (!approvalState.granted) {
+    if (!isFullyApproved(approvalState)) {
+      const pendingDomains = [approvalState.primaryDomain, ...approvalState.requiredSignoffs]
+        .filter((d) => {
+          const da = approvalState.approvals[d];
+          return !da || !da.granted;
+        });
       return {
         valid: false,
-        reason: `Cannot proceed to EXECUTION without PM approval. Current approval state: granted=${approvalState.granted}, grantedBy=${approvalState.grantedBy}`
+        reason: `Cannot proceed to EXECUTION without full leadership approval. Pending domains: ${pendingDomains.join(', ')}`
       };
     }
   }
@@ -299,14 +368,16 @@ export async function transitionPhase(
 }
 
 /**
- * Grant PM approval for an agent
+ * Grant domain-level approval for an agent
  *
  * This allows the agent to proceed from AWAITING_APPROVAL to EXECUTION
+ * once all required domains have approved.
  */
 export async function grantApproval(
   projectDir: string,
   agentRole: string,
-  pmIdentifier: string
+  pmIdentifier: string,
+  domain: PowerDomain = PowerDomain.PLANNING
 ): Promise<ValidationResult> {
   const lockPath = getLockPath(projectDir);
 
@@ -330,14 +401,32 @@ export async function grantApproval(
       };
     }
 
-    // Grant approval atomically
-    currentState.approval.granted = true;
-    currentState.approval.grantedBy = pmIdentifier;
-    currentState.approval.grantedAt = Date.now();
+    // Grant domain-level approval
+    if (!currentState.approval.approvals) {
+      currentState.approval.approvals = {};
+    }
+    currentState.approval.approvals[domain] = {
+      granted: true,
+      grantedBy: pmIdentifier,
+      grantedAt: Date.now(),
+    };
+
+    // Sync legacy fields
+    syncLegacyApprovalFields(currentState.approval);
 
     saveAgentStatus(projectDir, status);
 
-    console.log(`✅ PM批准 ${agentRole} 的方案，可以开始执行`);
+    const fullyApproved = isFullyApproved(currentState.approval);
+    if (fullyApproved) {
+      console.log(`✅ 领导层全部批准 ${agentRole} 的方案，可以开始执行`);
+    } else {
+      const pendingDomains = [currentState.approval.primaryDomain, ...currentState.approval.requiredSignoffs]
+        .filter((d) => {
+          const da = currentState.approval.approvals[d];
+          return !da || !da.granted;
+        });
+      console.log(`✅ ${domain} 批准 ${agentRole} 的方案，等待: ${pendingDomains.join(', ')}`);
+    }
 
     return { valid: true };
   });
@@ -345,6 +434,7 @@ export async function grantApproval(
 
 /**
  * Revoke approval (e.g., when plan needs revision)
+ * Revokes all domain approvals and resets to unapproved state.
  */
 export async function revokeApproval(
   projectDir: string,
@@ -364,14 +454,25 @@ export async function revokeApproval(
       };
     }
 
-    // Revoke approval
+    // Revoke all domain approvals
+    if (currentState.approval.approvals) {
+      for (const domain of Object.keys(currentState.approval.approvals)) {
+        currentState.approval.approvals[domain] = {
+          granted: false,
+          grantedBy: null,
+          grantedAt: null,
+        };
+      }
+    }
+
+    // Sync legacy fields
     currentState.approval.granted = false;
     currentState.approval.grantedBy = null;
     currentState.approval.grantedAt = null;
 
     saveAgentStatus(projectDir, status);
 
-    console.log(`⚠️ PM撤销 ${agentRole} 的批准`);
+    console.log(`⚠️ 领导层撤销 ${agentRole} 的批准`);
 
     return { valid: true };
   });
@@ -380,7 +481,7 @@ export async function revokeApproval(
 /**
  * Check if agent can proceed to execution
  *
- * This is a convenience function for checking approval status
+ * Requires all necessary domain approvals to be granted
  */
 export function canProceedToExecution(projectDir: string, agentRole: string): boolean {
   const state = getPhaseState(projectDir, agentRole);
@@ -389,8 +490,8 @@ export function canProceedToExecution(projectDir: string, agentRole: string): bo
     return false;
   }
 
-  // Must be in awaiting_approval phase with granted approval
-  return state.currentPhase === WorkflowPhase.AWAITING_APPROVAL && state.approval.granted;
+  // Must be in awaiting_approval phase with all required domain approvals
+  return state.currentPhase === WorkflowPhase.AWAITING_APPROVAL && isFullyApproved(state.approval);
 }
 
 /**
@@ -428,12 +529,7 @@ export async function resetPhaseState(
         currentPhase: toPhase,
         previousPhase: null,
         phaseStartTime: Date.now(),
-        approval: {
-          required: false,
-          granted: false,
-          grantedBy: null,
-          grantedAt: null
-        },
+        approval: createDefaultApprovalState(),
         transitionHistory: []
       };
 
@@ -481,6 +577,7 @@ export default {
   grantApproval,
   revokeApproval,
   canProceedToExecution,
+  isFullyApproved,
   getApprovalState,
   getTransitionHistory,
   resetPhaseState,

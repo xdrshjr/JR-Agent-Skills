@@ -1,6 +1,6 @@
 /**
  * Whiteboard - 项目白板系统
- * 所有子智能体和PM共享的状态板
+ * 所有子智能体和Leadership Council共享的状态板
  */
 
 const fs = require('fs');
@@ -57,9 +57,45 @@ ${projectBrief.roles.map(r =>
 `;
   }
 
+  // Leadership Council section
+  let leadershipSection = '';
+  if (projectBrief && projectBrief.leadership) {
+    const leaders = projectBrief.leadership.leaders || [];
+    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
+    leadershipSection = `
+## 🏛️ Leadership Council (三权分立)
+
+| 权力域 | Leader | 状态 | 职责 |
+|--------|--------|------|------|
+${leaders.map(l =>
+  `| ${domainLabels[l.domain] || l.domain} | ${l.roleName} | 🟢 Active | ${l.expertise} |`
+).join('\n')}
+
+**交叉审批机制:**
+- 团队组建方案: 规划权(主) + 执行权(可行性) + 审判权(可测性)
+- Agent执行计划: 规划权(主) + 执行权(资源评估)
+- QA验证计划: 审判权(主) + 规划权(需求覆盖)
+- 交付物验收: 审判权(主) + 规划权(需求符合)
+
+---
+`;
+  } else {
+    leadershipSection = `
+## 🏛️ Leadership Council (三权分立)
+
+| 权力域 | Leader | 状态 | 待处理 |
+|--------|--------|------|--------|
+| 规划权 | Planning Director | 🟢 Active | - |
+| 执行权 | Operations Director | 🟢 Active | - |
+| 审判权 | Quality Director | 🟢 Active | - |
+
+---
+`;
+  }
+
   const initialContent = `# 项目白板 — ${projectId}
 
-> 实时共享状态板，所有团队成员可见
+> 实时共享状态板，所有团队成员和Leadership Council可见
 > 最后更新: ${new Date().toISOString()}
 
 ---
@@ -71,7 +107,7 @@ ${projectBrief.roles.map(r =>
 - **当前阶段**: 初始化
 
 ---
-${structureSection}
+${leadershipSection}${structureSection}
 ## 👥 团队成员状态
 
 | 角色 | 分配部分 | 状态 | 当前阶段 | 进度 | 最后更新 |
@@ -104,8 +140,8 @@ ${projectBrief && projectBrief.roles ? projectBrief.roles.map(r =>
 
 ## 💬 重要决策记录
 
-| 时间 | 决策 | 决策人 |
-|------|------|--------|
+| 时间 | 决策 | 决策人(域) |
+|------|------|------------|
 | | | |
 
 ---

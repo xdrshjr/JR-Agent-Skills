@@ -158,6 +158,71 @@ export async function validateConsistency(
     });
   }
 
+  // Check 5: Leadership state integrity (if present)
+  if (state.leadership) {
+    // Validate 3 leaders exist
+    if (!state.leadership.leaders || state.leadership.leaders.length !== 3) {
+      warnings.push({
+        type: 'inconsistent_data',
+        message: `Leadership state should have exactly 3 leaders, found ${state.leadership.leaders?.length || 0}`,
+        file: stateFilePath,
+      });
+    }
+
+    // Validate all 3 power domains are represented
+    if (state.leadership.leaders && state.leadership.leaders.length > 0) {
+      const domains = state.leadership.leaders.map((l: any) => l.domain);
+      const requiredDomains = ['planning', 'execution', 'quality'];
+      for (const domain of requiredDomains) {
+        if (!domains.includes(domain)) {
+          errors.push({
+            type: 'inconsistent_data',
+            message: `Leadership is missing ${domain} domain leader`,
+            file: stateFilePath,
+          });
+        }
+      }
+    }
+
+    // Validate cross-checks array
+    if (state.leadership.crossChecks && !Array.isArray(state.leadership.crossChecks)) {
+      errors.push({
+        type: 'corrupt_state',
+        message: 'leadership.crossChecks must be an array',
+        file: stateFilePath,
+      });
+    }
+
+    // Validate decisions array
+    if (state.leadership.decisions && !Array.isArray(state.leadership.decisions)) {
+      errors.push({
+        type: 'corrupt_state',
+        message: 'leadership.decisions must be an array',
+        file: stateFilePath,
+      });
+    }
+
+    // Validate cross-check status consistency
+    if (Array.isArray(state.leadership.crossChecks)) {
+      const crossChecksPath = path.join(projectDir, 'cross-checks.json');
+      if (existsSync(crossChecksPath)) {
+        try {
+          const ccContent = await readFile(crossChecksPath, 'utf-8');
+          const ccData = JSON.parse(ccContent);
+          if (Array.isArray(ccData) && ccData.length !== state.leadership.crossChecks.length) {
+            warnings.push({
+              type: 'inconsistent_data',
+              message: `Cross-check count mismatch: state.json has ${state.leadership.crossChecks.length}, cross-checks.json has ${ccData.length}`,
+              file: crossChecksPath,
+            });
+          }
+        } catch (error) {
+          // cross-checks.json may not exist yet, that's OK
+        }
+      }
+    }
+  }
+
   return {
     isValid: errors.length === 0,
     errors,

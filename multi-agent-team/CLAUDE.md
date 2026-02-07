@@ -4,16 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **multi-agent team coordination skill** that creates a virtual **3-person executor team + 1 independent QA agent** to collaboratively complete complex tasks. The system acts as a Project Manager (PM) that orchestrates sub-agents, manages their lifecycle, handles disputes, and ensures quality through dual-layer verification.
+This is a **multi-agent team coordination skill** that creates a virtual **3-person executor team + 1 independent QA agent** coordinated by a **Leadership Council of 3 leaders** (separation of powers / 三权分立). The system replaces the single PM model with three power domains: Planning Authority, Execution Authority, and Quality Authority. Each leader has final decision authority within their domain, while cross-checking and challenging decisions in other domains.
 
-**Key Architecture Principle**: The PM is a **coordinator, not an executor**. When blocked, the PM must pause the affected sub-agent and escalate to the user for decision-making.
+**Key Architecture Principle**: The Leadership Council consists of **coordinators, not executors**. When blocked, the relevant domain leader must pause the affected sub-agent and escalate to the user for decision-making.
 
 ## Core Architecture
 
+### Separation of Powers (三权分立)
+
+The leadership layer consists of three constant power domains with dynamically generated role names:
+
+| Power Domain | English ID | Core Responsibility | Final Decision Scope |
+|-------------|-----------|-------------------|---------------------|
+| **Planning Authority (规划权)** | `PLANNING` | Requirements, architecture, plan approval | Scope, plans, task assignment |
+| **Execution Authority (执行权)** | `EXECUTION` | Resources, progress, coordination | Resource allocation, timeouts, strategy |
+| **Quality Authority (审判权)** | `QUALITY` | QA standards, validation, acceptance | Quality standards, acceptance, delivery |
+
+Leader role names are generated dynamically per task type (e.g., "System Architect" for code, "Content Strategist" for documents).
+
 ### Team Structure
-- **1 Project Manager (PM)**: Orchestrates the entire workflow (you, when using this skill)
+- **3 Leadership Council Members**: Planning Authority Leader, Execution Authority Leader, Quality Authority Leader
 - **3 Executor Agents**: Dynamically assigned roles based on task type (e.g., Frontend Dev, Backend Dev, Designer)
-- **1 QA Agent**: Independent verification specialist who validates all executor deliverables
+- **1 QA Agent**: Independent verification specialist, reports to Quality Authority Leader
 
 ### Team Context Awareness
 
@@ -47,16 +59,18 @@ This is a **multi-agent team coordination skill** that creates a virtual **3-per
 
 ### Execution Flow
 ```
-User Request → Requirement Clarification → PM Analysis → Team Assembly → Task Distribution
+User Request → Requirement Clarification → Leadership Generation → Team Assembly → Task Distribution
+    ↓
+[Planning Authority: Approve Plans] → [Execution Authority: Start Execution]
     ↓
 [Executors Work in Parallel] → Submit to QA
     ↓
-[QA Validation Planning] → PM Approval → [QA Validates]
+[Quality Authority: QA Validation Planning] → Planning Authority confirms coverage → [QA Validates]
     ↓
-    ├─→ ✅ Pass: Continue
-    └─→ ❌ Fail: Return to Executor (max 3 retries)
+    ├─→ ✅ Pass: Quality Authority accepts + Planning Authority confirms requirements met
+    └─→ ❌ Fail: Execution Authority coordinates return to Executor (max 3 retries)
     ↓
-[QA Report] → [PM Final Acceptance] → Deliver to User
+[Quality Authority: Final Acceptance] → Deliver to User
 ```
 
 ### Requirement Clarification Phase
@@ -194,47 +208,50 @@ When QA rejects a deliverable:
 ## Key Files & Modules
 
 ### Core Implementation
-- `src/team.ts` (815 lines): Team spawning, messaging, timeout handling, dispute resolution
-- `src/state.ts` (355 lines): Backward compatibility layer (delegates to state-manager)
-- `src/deliverable.ts` (396 lines): Aggregation logic for different deliverable types
-- `src/index.ts` (377 lines): Main entry point and workflow orchestration
-- `src/phase-state-machine.ts` (450 lines): Generic phase transition enforcement engine
+- `src/team.ts`: Team spawning, messaging, timeout handling, dispute resolution, leader spawning
+- `src/state.ts`: Backward compatibility layer (delegates to state-manager)
+- `src/deliverable.ts`: Aggregation logic for different deliverable types
+- `src/index.ts`: Main entry point and workflow orchestration
+- `src/phase-state-machine.ts`: Multi-domain phase transition enforcement engine (separation of powers)
+
+### Leadership Council (三权分立)
+- `src/leadership.ts`: Leadership definition, dynamic role generation, power domain mapping
+- `src/cross-check.ts`: Cross-check approval and challenge protocol between leaders
+- `src/council-decisions.ts`: Council decision recording and audit trail
 
 ### State Management
-- `src/state-manager.ts` (450 lines): Unified state management with single source of truth
-- `src/state-lock.ts` (120 lines): File locking for atomic operations (uses proper-lockfile)
-- `src/state-sync.ts` (200 lines): Automatic synchronization to derived views
-- `src/state-validator.ts` (280 lines): Consistency validation and recovery
-- `src/concurrency-manager.ts` (420 lines): Execution slot management and resource control
+- `src/state-manager.ts`: Unified state management with single source of truth (includes leadership state)
+- `src/state-lock.ts`: File locking for atomic operations (uses proper-lockfile)
+- `src/state-sync.ts`: Automatic synchronization to derived views (includes leadership display)
+- `src/state-validator.ts`: Consistency validation and recovery (includes leadership validation)
+- `src/concurrency-manager.ts`: Execution slot management and resource control
 
 ### Requirement Clarification
-- `src/requirement-clarification.ts` (300 lines): Main orchestrator for multi-round clarification
-- `src/clarification-state.ts` (150 lines): State management for clarification process
-- `src/confidence-evaluator.ts` (200 lines): Multi-dimensional confidence scoring
-- `src/question-generator.ts` (250 lines): Adaptive question generation targeting gaps
+- `src/requirement-clarification.ts`: Main orchestrator for multi-round clarification
+- `src/clarification-state.ts`: State management for clarification process
+- `src/confidence-evaluator.ts`: Multi-dimensional confidence scoring
+- `src/question-generator.ts`: Adaptive question generation targeting gaps
 - `test-clarification.js`: Test suite for clarification system
 
 ### Workflow Scripts
-- `pm-workflow.js` (1950+ lines): PM coordination logic + approval management + section assignment + requirement clarification (now uses state-manager)
-- `agent-workflow.js` (290 lines): Sub-agent autonomous planning workflow with team context awareness
+- `council-workflow.js`: Leadership Council coordination logic + domain-based approval + section assignment + requirement clarification
+- `pm-workflow.js`: Legacy PM workflow (kept for backward compatibility, prefer council-workflow.js)
+- `agent-workflow.js`: Sub-agent autonomous planning workflow with leadership council awareness
 - `skill-aware-planning.js`: User-specified skill validation (dynamic discovery by agents)
-- `timeout-monitor.js`: Timeout detection and recovery (now uses state-manager)
-- `whiteboard.js` (610 lines): Shared state board with project structure display (now uses state-manager)
-
-### Migration & Tools
-- `scripts/migrate-state.js`: Automatic migration tool for existing projects
-- `test-team-context.js`: Test suite for team context awareness and section assignment
-- `test-clarification.js`: Test suite for requirement clarification system
+- `timeout-monitor.js`: Timeout detection and recovery
+- `whiteboard.js`: Shared state board with project structure and Leadership Council display
 
 ### Documentation
-- `SKILL.md` (1816 lines): Complete skill specification with all protocols
-- `PM_QUICKREF.md`: Quick reference card for PM pause protocol
-- `PM_CHECKLIST.md`: Detailed checklist for PM operations
+- `SKILL.md`: Complete skill specification with all protocols
+- `COUNCIL_QUICKREF.md`: Quick reference card for Leadership Council operations
+- `COUNCIL_CHECKLIST.md`: Detailed checklist for Leadership Council operations
+- `PM_QUICKREF.md`: Legacy PM quick reference (kept for backward compatibility)
+- `PM_CHECKLIST.md`: Legacy PM checklist (kept for backward compatibility)
 - `README.md`: User-facing quick start guide
 - `IMPLEMENTATION_SUMMARY.md`: Team context awareness implementation details
 
 ### Configuration
-- `config/default-roles.yaml`: Default role templates for different task types (1711 lines, 41 roles, ~60KB)
+- `config/default-roles.yaml`: Default role templates + leadership templates for different task types
   - **Performance**: File read <1ms, no bottleneck detected
   - **Purpose**: Reference documentation for role definitions (system uses dynamic generation at runtime)
   - **Structure**: Skill categories, role definitions, team templates
@@ -371,23 +388,27 @@ Check `projects/{project-id}/agent-status.json` for real-time agent states.
 
 ## Important Constraints
 
-### PM Role Boundaries
-**PM MUST**:
-- Coordinate and monitor agents
-- Pause agents when blocked
-- Escalate to user with detailed context
+### Leadership Council Role Boundaries
+
+**Each Leader MUST**:
+- Coordinate and monitor within their domain
+- Cross-check decisions from other domains
+- Pause agents when blocked (Execution Authority)
+- Escalate to user with detailed context when unresolvable
 - Wait for user decisions before resuming
 
-**PM MUST NOT**:
+**Each Leader MUST NOT**:
 - Execute tasks themselves
-- Make major decisions without user approval
+- Make decisions outside their domain without cross-check
 - Hide problems from user
 - Allow paused agents to continue
+- Ignore objections from other leaders
 - Skip QA validation for final delivery
 
 ### Quality Assurance
 - All executor deliverables MUST go through QA validation
-- QA must create validation plan and get PM approval before validating
+- QA must create validation plan and get Quality Authority Leader approval before validating
+- Planning Authority Leader co-signs validation plan for requirement coverage
 - QA must be objective and independent (no lenient judgments)
 - Failed items must be returned to executor with specific fix guidance
 - Max 3 retry attempts before escalation
@@ -638,13 +659,15 @@ Based on task type, deliverables are aggregated differently:
 
 ## Key Design Patterns
 
-1. **Coordinator Pattern**: PM orchestrates but doesn't execute
-2. **Pause-Escalate-Resume**: Structured handling of blockers
-3. **Dual-Layer QA**: Independent QA validation + PM final acceptance
-4. **Autonomous Planning**: Sub-agents plan → get approval → execute
-5. **Skill-Aware Assignment**: Automatic discovery and distribution of relevant skills
-6. **Unified State Management**: Single source of truth with automatic synchronization
-7. **Dynamic Configuration**: No hardcoded paths, works on any computer
+1. **Separation of Powers (三权分立)**: 3-leader council with Planning, Execution, and Quality domains
+2. **Cross-Check Protocol**: Inter-leader approval with objection and escalation mechanisms
+3. **Coordinator Pattern**: Leaders orchestrate but don't execute
+4. **Pause-Escalate-Resume**: Structured handling of blockers (Execution Authority → User)
+5. **Dual-Layer QA**: Independent QA validation (Quality Authority) + requirement match (Planning Authority)
+6. **Autonomous Planning**: Sub-agents plan → get Planning Authority approval → Execution Authority monitors
+7. **Skill-Aware Assignment**: Automatic discovery and distribution of relevant skills
+8. **Unified State Management**: Single source of truth with automatic synchronization
+9. **Dynamic Configuration**: No hardcoded paths, works on any computer
 
 ## Project Index
 
@@ -662,6 +685,8 @@ This project has a pre-generated index for quick codebase understanding.
 ## References
 
 - Full specification: `SKILL.md`
-- PM quick reference: `PM_QUICKREF.md`
+- Leadership council quick reference: `COUNCIL_QUICKREF.md`
+- Leadership council checklist: `COUNCIL_CHECKLIST.md`
+- Legacy PM quick reference: `PM_QUICKREF.md`
 - Example workflows: `examples/` directory
 - Skill guides: `skill-guides/` directory

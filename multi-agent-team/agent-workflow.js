@@ -1,6 +1,6 @@
 /**
  * Agent Workflow - 子智能体工作流程
- * 强调自主规划、PM 审批后再执行
+ * 强调自主规划、Leadership Council 审批后再执行
  */
 
 const fs = require('fs');
@@ -12,7 +12,7 @@ const path = require('path');
 function generateAutonomousAgentTask(projectInfo, agentRole, agentIndex) {
   const { projectId, skillAnalysis, projectDir, userRequest } = projectInfo;
 
-  const { generateTeamSuggestion } = require('./pm-workflow');
+  const { generateTeamSuggestion } = require('./council-workflow');
   const teamSuggestion = generateTeamSuggestion(skillAnalysis);
   const roleInfo = teamSuggestion[agentIndex];
 
@@ -38,23 +38,35 @@ ${mandatorySkills.map(s => `- **${s.name}**: 用户明确要求使用此技能`)
 ⚠️ **CRITICAL: Phase Transition Enforcement**
 
 Your workflow is monitored by a **phase state machine**. You CANNOT skip phases.
-Attempting to skip from "方案规划" to "执行" without PM approval will be **BLOCKED** by the system.
+Attempting to skip from "方案规划" to "执行" without leadership approval will be **BLOCKED** by the system.
 
 ## 7-Step Workflow (Strictly Enforced)
 
-**Step 0: 技能发现 (5%)** → Report to PM → Wait for confirmation
-**Step 1: 需求理解 (10%)** → Report to PM → Wait for confirmation
-**Step 2: Skill调研 (20%)** → Report to PM → Wait for confirmation
-**Step 3: 方案规划 (30%)** → Report to PM → **MUST WAIT FOR APPROVAL**
-**Step 4: 等待PM批准** → **BLOCKING CHECKPOINT** → Cannot proceed without approval
-**Step 5: 执行 (40%)** → **ONLY AFTER APPROVAL GRANTED**
-**Step 6: 完成** → Submit to QA
+**Step 0: 技能发现 (5%)** → Report to Planning Authority Leader → Wait for confirmation
+**Step 1: 需求理解 (10%)** → Report to Planning Authority Leader → Wait for confirmation
+**Step 2: Skill调研 (20%)** → Report to Planning Authority Leader → Wait for confirmation
+**Step 3: 方案规划 (30%)** → Report to Planning Authority Leader → **MUST WAIT FOR APPROVAL**
+**Step 4: 等待审批** → **BLOCKING CHECKPOINT** → Cannot proceed without approval
+**Step 5: 执行 (40%)** → **ONLY AFTER APPROVAL GRANTED** → Report progress to Execution Authority Leader
+**Step 6: 完成** → Submit to QA (managed by Quality Authority Leader)
 
 🚨 **ENFORCEMENT MECHANISM**:
 - Your phase transitions are validated by the system
 - Attempting to skip from "方案规划" to "执行" without approval will be BLOCKED
 - You will receive an error if you try to proceed without approval
 - The system tracks your approval state and will prevent execution
+
+---
+
+## Leadership Council (三权分立)
+
+This project is led by a 3-member Leadership Council:
+
+| Power Domain | Responsibility | You Report For |
+|-------------|---------------|---------------|
+| **Planning Authority (规划权)** | Plans, scope, requirements | Plan submissions, skill selection, scope questions |
+| **Execution Authority (执行权)** | Progress, resources, blockers | Progress updates, resource requests, blockers |
+| **Quality Authority (审判权)** | QA, validation, acceptance | Deliverable submissions (via QA), quality questions |
 
 ---
 
@@ -91,15 +103,15 @@ ${idx + 1}. **${member.role}** ${member.role === agentRole ? '(你)' : ''}
 
 - 使用 find-skills 技能发现可用技能
 - 根据你的角色选择2-3个最匹配的技能
-- 向PM报告你的选择和理由
-- **等待PM批准**
+- 向Planning Authority Leader报告你的选择和理由
+- **等待Planning Authority Leader批准**
 
 **报告格式：**
 "我发现了 [N] 个可用技能。基于我的角色（${agentRole}），我推荐使用：
 1. [技能名]: [为什么匹配我的角色]
 2. [技能名]: [为什么匹配我的角色]
 
-等待PM批准。"
+等待Planning Authority Leader批准。"
 
 **更新状态：** stage: "技能发现", progress: 5
 
@@ -132,18 +144,19 @@ ${idx + 1}. **${member.role}** ${member.role === agentRole ? '(你)' : ''}
 - **明确说明你负责的部分范围**（不是完整交付物）
 - 说明如何与队友的部分衔接
 - 汇报：📋 方案汇报（必须详细到命令级，包括协作计划）
+- 提交方案给 **Planning Authority Leader** 审批
 
 **更新状态：** stage: "方案规划", progress: 30
 
 ---
 
-### Step 4: 等待PM批准 (CRITICAL CHECKPOINT)
+### Step 4: 等待审批 (CRITICAL CHECKPOINT)
 
 **How to Request Approval:**
 1. Complete your plan in Step 3
-2. Report to PM: "方案规划完成，请求批准"
+2. Report to Planning Authority Leader: "方案规划完成，请求批准"
 3. **Update status:** stage: "等待批准", progress: 35
-4. Wait for PM response: "批准执行" or "需要修改"
+4. Wait for Planning Authority Leader response: "批准执行" or "需要修改"
 5. Only proceed to Step 5 after receiving explicit approval
 
 ⚠️ **BLOCKING CHECKPOINT**: The system will prevent you from proceeding to execution without approval.
@@ -155,7 +168,8 @@ ${idx + 1}. **${member.role}** ${member.role === agentRole ? '(你)' : ''}
 **ONLY AFTER APPROVAL GRANTED**
 
 - 使用已批准的技能执行方案
-- 按里程碑汇报进度
+- 按里程碑向 **Execution Authority Leader** 汇报进度
+- 遇到阻塞向 **Execution Authority Leader** 报告
 
 **更新状态：** stage: "执行", progress: 40-90
 
@@ -163,7 +177,7 @@ ${idx + 1}. **${member.role}** ${member.role === agentRole ? '(你)' : ''}
 
 ### Step 6: 完成 (提交成果给QA)
 
-- 提交成果给QA验证
+- 提交成果给QA验证（QA由 **Quality Authority Leader** 管理）
 - **更新状态：** stage: "完成", progress: 100
 ${mandatorySkillsSection}
 
@@ -185,22 +199,22 @@ When you enter QA_PLANNING phase:
    - Tools and Resources: what you need for validation
    - Risk Assessment: potential risks and mitigation
    - Validation Sequence: order of validation with rationale
-4. **Submit Plan to PM**: Report your validation plan and request approval
-5. **Wait for PM Approval**: PM will review using \`approveValidationPlan()\` or \`rejectValidationPlan()\`
+4. **Submit Plan to Quality Authority Leader**: Report your validation plan and request approval
+5. **Wait for Quality Authority Leader Approval**: Quality Authority Leader will review and approve/reject
 
 **Status Update**: stage: "QA计划", progress: 10
 
-### QA Phase 2: 等待PM批准 (QA_PLANNING)
+### QA Phase 2: 等待审批 (QA_PLANNING)
 
-- Wait for PM to approve or reject your validation plan
-- If rejected: revise plan based on PM feedback and resubmit
+- Wait for Quality Authority Leader to approve or reject your validation plan
+- If rejected: revise plan based on feedback and resubmit
 - If approved: proceed to validation execution
 
 **Status Update**: stage: "等待批准", progress: 15
 
 ### QA Phase 3: 执行验证 (QA_VALIDATING)
 
-**ONLY AFTER PM APPROVES YOUR VALIDATION PLAN**
+**ONLY AFTER QUALITY AUTHORITY LEADER APPROVES YOUR VALIDATION PLAN**
 
 - Execute validation following your approved plan
 - Validate each executor's deliverables systematically
@@ -215,16 +229,17 @@ When you enter QA_PLANNING phase:
 - Compile validation results
 - Report pass/fail for each executor
 - Provide specific feedback for failed items
-- Submit final QA report to PM
+- Submit final QA report to **Quality Authority Leader**
 
 **Status Update**: stage: "QA完成", progress: 100
 
 **QA Critical Rules**:
-- ❌ DO NOT start validation without PM-approved plan
+- ❌ DO NOT start validation without Quality Authority Leader-approved plan
 - ❌ DO NOT skip validation plan creation
 - ✅ MUST create detailed validation plan first
-- ✅ MUST wait for PM approval before validating
+- ✅ MUST wait for Quality Authority Leader approval before validating
 - ✅ MUST be objective and thorough in validation
+- ✅ Report results to Quality Authority Leader (who manages final acceptance)
 
 ---
 
@@ -239,7 +254,7 @@ The system detects phase transitions by monitoring your stage updates:
 - "执行" → execution phase (BLOCKED WITHOUT APPROVAL)
 - "完成" → completion phase
 
-**Critical**: When you update your status to "执行", the system will check if PM approval was granted.
+**Critical**: When you update your status to "执行", the system will check if leadership approval was granted.
 If not, your status update will be REJECTED with an error.
 
 ---
@@ -256,7 +271,7 @@ If not, your status update will be REJECTED with an error.
 ## Rules
 
 ❌ **禁止**：
-- 擅自执行（未经PM批准）
+- 擅自执行（未经领导层批准）
 - 不读文档
 - 跳过规划
 - 硬试>2次
@@ -264,7 +279,7 @@ If not, your status update will be REJECTED with an error.
 - 从"方案规划"直接跳到"执行"
 
 ✅ **必须**：
-- 每步汇报
+- 每步汇报（计划→规划权Leader，进度→执行权Leader，交付→审判权Leader）
 - 方案具体
 - 不确定就问
 - 先发现技能再规划
@@ -273,7 +288,7 @@ If not, your status update will be REJECTED with an error.
 
 ---
 
-👉 **现在：开始第0步（技能发现），完成后汇报PM**`;
+👉 **现在：开始第0步（技能发现），完成后汇报Planning Authority Leader**`;
 }
 
 /**
@@ -290,23 +305,27 @@ function formatSkillsConcise(skills) {
 }
 
 /**
- * 生成 PM 审批检查清单
+ * 生成 Planning Authority Leader 审批检查清单
  */
 function generatePMApprovalChecklist(agentRole, agentProposal) {
   return `
 ═══════════════════════════════════════════════════════════
-📋 PM 审批检查清单 —— ${agentRole} 的方案
+📋 Planning Authority 审批检查清单 —— ${agentRole} 的方案
 ═══════════════════════════════════════════════════════════
 
 【方案内容】
 ${agentProposal}
 
-【PM 检查项】
+【Planning Authority Leader 检查项】
 □ 技能选择是否合理？
 □ 使用步骤是否具体可执行？
 □ 预期产出是否明确？
 □ 风险识别是否充分？
 □ 时间预估是否合理？
+
+【Execution Authority Leader 联审】
+□ 资源分配是否可行？
+□ 时间安排是否合理？
 
 【审批选项】
 1. ✅ **批准** - 按方案执行
@@ -326,30 +345,33 @@ ${agentProposal}
 }
 
 /**
- * 生成 QA 验证计划审批检查清单
+ * 生成 QA 验证计划审批检查清单 (Quality Authority Leader)
  */
 function generateQAValidationPlanChecklist(qaAgentRole, validationPlan) {
   return `
 ═══════════════════════════════════════════════════════════
-📋 PM 审批检查清单 —— ${qaAgentRole} 的验证计划
+📋 Quality Authority 审批检查清单 —— ${qaAgentRole} 的验证计划
 ═══════════════════════════════════════════════════════════
 
 【验证计划内容】
 ${JSON.stringify(validationPlan, null, 2)}
 
-【PM 检查项】
+【Quality Authority Leader 检查项】
 □ 完整性: 是否覆盖所有执行者和交付物？
 □ 适当性: 验证方法是否适合任务类型？
 □ 清晰性: 验收标准是否具体可衡量？
 □ 可行性: 计划是否现实可执行？
 □ 资源: 所需工具和资源是否可用？
 
+【Planning Authority Leader 联审】
+□ 需求覆盖: 验证计划是否覆盖所有需求？
+
 【审批选项】
 1. ✅ **批准** - 按计划验证
-   使用: approveValidationPlan(projectDir, '${qaAgentRole}', 'PM-ID')
+   使用: approveValidationPlan(projectDir, '${qaAgentRole}', 'Quality-Leader-ID')
 
 2. ❌ **拒绝** - 需要修改
-   使用: rejectValidationPlan(projectDir, '${qaAgentRole}', '原因', 'PM-ID')
+   使用: rejectValidationPlan(projectDir, '${qaAgentRole}', '原因', 'Quality-Leader-ID')
 
 ═══════════════════════════════════════════════════════════
 `;
@@ -376,7 +398,7 @@ function generateAgentStageReportTemplate(agentRole, stage, progress) {
 【疑问/需确认】
 • 疑问1: xxx
 
-请 PM 确认理解是否正确，然后进入下一步。
+请 Planning Authority Leader 确认理解是否正确，然后进入下一步。
 `,
     research: `
 📊 阶段汇报 —— ${agentRole} —— Skill 调研完成
@@ -398,7 +420,7 @@ function generateAgentStageReportTemplate(agentRole, stage, progress) {
 • 问题1: xxx
 • 限制1: xxx
 
-请 PM 确认技能选择方向，然后进入方案规划。
+请 Planning Authority Leader 确认技能选择方向，然后进入方案规划。
 `,
     planning: `
 📋 方案汇报 —— ${agentRole}
@@ -425,7 +447,7 @@ function generateAgentStageReportTemplate(agentRole, stage, progress) {
 【预计时间】
 xxx
 
-请 PM 审批。
+请 Planning Authority Leader 审批。
 `,
     progress: `
 📈 进度汇报 —— ${agentRole} —— ${progress}%
@@ -457,8 +479,8 @@ module.exports = {
 
 // CLI 测试
 if (require.main === module) {
-  const { initializeProject } = require('./pm-workflow');
-  
+  const { initializeProject } = require('./council-workflow');
+
   console.log('=== 测试自主规划任务分配 ===\n');
   
   const project = initializeProject('使用 remotion 制作一个 AI 论文视频', { mode: 'SUPERVISED' });

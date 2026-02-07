@@ -1,18 +1,26 @@
 /**
  * Multi-Agent Team Skill - Core Logic
  *
- * This skill creates a virtual 3-person team to collaboratively complete tasks.
- * You act as the Project Manager who orchestrates the entire process.
+ * This skill creates a virtual 3-person team coordinated by a Leadership Council
+ * (3 leaders with separation of powers) to collaboratively complete tasks.
+ * The Leadership Council replaces the single PM model with three power domains:
+ * Planning Authority, Execution Authority, and Quality Authority.
  */
 
 import { spawnAgent, sendMessage, collectResponses } from './team';
 import { createProjectState, updateProjectState } from './state';
+import { generateLeadership, LeadershipConfig } from './leadership';
 
 // Export requirement clarification modules
 export * from './requirement-clarification';
 export * from './clarification-state';
 export * from './confidence-evaluator';
 export * from './question-generator';
+
+// Export leadership module
+export * from './leadership';
+export * from './cross-check';
+export * from './council-decisions';
 
 // ============================================================================
 // PHASE 1: Task Analysis
@@ -36,6 +44,7 @@ interface TaskProfile {
   estimatedDuration: number; // minutes
   expertiseAreas: string[];
   deliverableType: 'code-project' | 'document' | 'research-report' | 'design-assets';
+  leadershipConfig: LeadershipConfig; // Leadership council configuration
 }
 
 // ============================================================================
@@ -45,13 +54,19 @@ interface TaskProfile {
 async function assembleTeam(profile: TaskProfile): Promise<TeamConfig> {
   /**
    * Design 3 complementary roles based on task profile.
-   * 
-   * Examples:
+   * Also generates the Leadership Council with 3 leaders.
+   *
+   * Leadership Council (constant structure):
+   * - Planning Authority Leader: Requirements, plans, scope
+   * - Execution Authority Leader: Resources, progress, coordination
+   * - Quality Authority Leader: QA, validation, acceptance
+   *
+   * Executor examples:
    * - Code project: [Architect, Developer, QA]
    * - Writing task: [Researcher, Writer, Editor]
    * - Research: [Data Collector, Analyst, Synthesizer]
    * - Design: [Strategist, Designer, Reviewer]
-   * 
+   *
    * Role names should be descriptive and task-specific.
    */
 }
@@ -59,6 +74,7 @@ async function assembleTeam(profile: TaskProfile): Promise<TeamConfig> {
 interface TeamConfig {
   roles: Role[];
   collaborationStrategy: 'parallel' | 'sequential' | 'mixed';
+  leaders: LeadershipConfig; // Leadership council configuration
 }
 
 interface Role {
@@ -99,20 +115,22 @@ async function executeFullAuto(
 ): Promise<ProjectResult> {
   /**
    * FULL_AUTO Execution Flow:
-   * 
+   *
    * 1. Create project state file
-   * 2. Spawn 3 agents with system prompts (30 min timeout each)
-   * 3. Send kickoff message to all
-   * 4. Monitor progress (every 5 min) + TIMEOUT MONITORING
-   *    - Detect agent timeouts automatically
-   *    - On timeout: PM assists stop → analyzes → restarts with guidance
+   * 2. Spawn Leadership Council (3 leaders)
+   * 3. Spawn 3 executor agents with system prompts (30 min timeout each)
+   * 4. Send kickoff message to all
+   * 5. Monitor progress (every 5 min) + TIMEOUT MONITORING
+   *    - Execution Authority Leader detects agent timeouts
+   *    - On timeout: assists stop → analyzes → restarts with guidance
    *    - Max 2 restarts per agent
-   * 5. Detect and resolve disputes (max 2 rounds)
-   * 6. Collect deliverables
-   * 7. Review each deliverable (max 3 rework)
-   * 8. Aggregate final result
-   * 9. Update project state
-   * 10. Return to user
+   * 6. Detect and resolve disputes (relevant domain leader decides, others challenge)
+   * 7. Collect deliverables
+   * 8. Quality Authority Leader reviews via QA agent (max 3 rework)
+   * 9. Cross-check: Quality Authority accepts + Planning Authority confirms requirements met
+   * 10. Aggregate final result
+   * 11. Update project state
+   * 12. Return to user
    */
 }
 
@@ -183,10 +201,10 @@ async function monitorProgress(
    * 
    * TIMEOUT HANDLING:
    * - Each agent has 30-minute time limit
-   * - PM monitors and detects timeouts automatically
-   * - On timeout: PM assists agent to stop → analyzes cause → restarts with guidance
+   * - Execution Authority Leader monitors and detects timeouts
+   * - On timeout: assists agent to stop → analyzes cause → restarts with guidance
    * - Max 2 restarts per agent (3 total attempts)
-   * - After max restarts: agent marked as failed, PM works with remaining agents
+   * - After max restarts: agent marked as failed, leadership works with remaining agents
    */
 }
 
@@ -198,19 +216,19 @@ async function handleDispute(
 ): Promise<DisputeResolution> {
   /**
    * Dispute Resolution Process:
-   * 
+   *
    * Round 1:
    * - Let both agents present their positions
-   * - Ask clarifying questions
-   * 
+   * - Execution Authority Leader asks clarifying questions
+   *
    * Round 2:
    * - Ask for reasoning/evidence
    * - Summarize differences
-   * 
-   * Round 3 (PM Decision):
-   * - Make binding decision
-   * - Provide clear justification
-   * - Direct next steps
+   *
+   * Round 3 (Domain Leader Decision):
+   * - Relevant domain leader makes decision
+   * - Other leaders may challenge through cross-check protocol
+   * - If unresolved → escalate to user
    */
 }
 

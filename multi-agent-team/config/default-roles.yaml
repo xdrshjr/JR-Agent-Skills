@@ -1,7 +1,7 @@
 # Default Role Definitions for Multi-Agent Team
 #
 # This file serves as REFERENCE DOCUMENTATION for role definitions.
-# The system uses dynamic role generation at runtime (see pm-workflow.js:332-395).
+# The system uses dynamic role generation at runtime (see council-workflow.js).
 #
 # Design Principles:
 # - Generic skill categories (not specific skill names)
@@ -1483,6 +1483,104 @@ roles:
         - "seo-report"
         - "keyword-strategy"
         - "recommendations"
+
+# ============================================================================
+# LEADERSHIP TEMPLATES (Separation of Powers)
+# ============================================================================
+# Dynamic leader role generation by task type
+# Each project gets 3 leaders representing the three power domains:
+#   - Planning Authority (规划权): Requirements, plans, scope
+#   - Execution Authority (执行权): Resources, progress, coordination
+#   - Quality Authority (审判权): QA, validation, acceptance
+
+leadership_templates:
+  code:
+    planning:
+      name: "System Architect"
+      expertise: "System design, architecture patterns, technical requirements analysis"
+    execution:
+      name: "Tech Lead"
+      expertise: "Resource management, development workflow, technical coordination"
+    quality:
+      name: "Code Review Lead"
+      expertise: "Code quality standards, testing strategy, technical debt assessment"
+
+  document:
+    planning:
+      name: "Content Strategist"
+      expertise: "Content architecture, audience analysis, information hierarchy"
+    execution:
+      name: "Editorial Director"
+      expertise: "Editorial workflow, resource coordination, timeline management"
+    quality:
+      name: "Review Editor"
+      expertise: "Content quality, consistency review, editorial standards"
+
+  research:
+    planning:
+      name: "Research Director"
+      expertise: "Research methodology, hypothesis design, scope definition"
+    execution:
+      name: "Investigation Lead"
+      expertise: "Data collection coordination, research operations, resource allocation"
+    quality:
+      name: "Peer Review Lead"
+      expertise: "Academic rigor, methodology validation, findings verification"
+
+  design:
+    planning:
+      name: "Design Director"
+      expertise: "Design strategy, visual language definition, UX architecture"
+    execution:
+      name: "Creative Lead"
+      expertise: "Design production, asset management, creative coordination"
+    quality:
+      name: "Design Reviewer"
+      expertise: "Design consistency, usability assessment, brand compliance"
+
+  video:
+    planning:
+      name: "Creative Director"
+      expertise: "Narrative design, visual storytelling, creative vision"
+    execution:
+      name: "Production Manager"
+      expertise: "Production workflow, resource scheduling, technical coordination"
+    quality:
+      name: "Post-Production Lead"
+      expertise: "Quality control, final review, output standards verification"
+
+  ppt:
+    planning:
+      name: "Presentation Architect"
+      expertise: "Narrative structure, audience engagement strategy, slide architecture"
+    execution:
+      name: "Slide Production Lead"
+      expertise: "Slide creation workflow, visual asset management, production coordination"
+    quality:
+      name: "Presentation Reviewer"
+      expertise: "Presentation effectiveness, visual consistency, delivery readiness"
+
+  analysis:
+    planning:
+      name: "Analytics Architect"
+      expertise: "Analysis framework design, metric definition, methodology planning"
+    execution:
+      name: "Data Operations Lead"
+      expertise: "Data pipeline coordination, computation resource management"
+    quality:
+      name: "Analysis Reviewer"
+      expertise: "Statistical validity, methodology verification, insight accuracy"
+
+  default:
+    planning:
+      name: "Planning Director"
+      expertise: "Strategic planning, requirement analysis, task decomposition"
+    execution:
+      name: "Operations Director"
+      expertise: "Operational coordination, resource management, progress tracking"
+    quality:
+      name: "Quality Director"
+      expertise: "Quality standards, verification methodology, acceptance criteria"
 
 # ============================================================================
 # TEAM TEMPLATES

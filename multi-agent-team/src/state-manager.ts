@@ -10,10 +10,21 @@ import { existsSync } from 'fs';
 import { withLock, getLockPath } from './state-lock';
 import { syncAll } from './state-sync';
 import { EventEmitter } from 'events';
+import type { LeaderRole, CrossCheckRule, DisputeRule } from './leadership';
+import type { CrossCheckRequest } from './cross-check';
+import type { CouncilDecision } from './council-decisions';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+export interface LeadershipState {
+  leaders: LeaderRole[];
+  crossCheckRules: CrossCheckRule[];
+  disputeResolutionRules: DisputeRule[];
+  crossChecks: CrossCheckRequest[];
+  decisions: CouncilDecision[];
+}
 
 export interface ProjectState {
   id: string;
@@ -28,14 +39,17 @@ export interface ProjectState {
   logs: LogEntry[];
   agentStatus?: Record<string, AgentStatus>; // Real-time agent execution state
   whiteboard?: WhiteboardState; // Team communication board
+  leadership?: LeadershipState; // Leadership council state (separation of powers)
 }
 
 export interface TeamMember {
   role: string;
   agentId: string;
   status: 'active' | 'blocked' | 'completed' | 'failed' | 'paused';
+  layer?: 'leader' | 'executor' | 'qa';
   deliverable?: string;
   reworkCount: number;
+  domain?: string; // PowerDomain value for leaders
 }
 
 export interface Milestone {
@@ -483,4 +497,113 @@ export function listProjects(projectsDir?: string): string[] {
       const stateFile = path.join(baseDir, name, 'state.json');
       return existsSync(stateFile);
     });
+}
+
+// ============================================================================
+// Leadership Council Helpers
+// ============================================================================
+
+/**
+ * Update leadership state in the project
+ */
+export async function updateLeadershipState(
+  projectId: string,
+  leadershipUpdate: Partial<LeadershipState>,
+  projectsDir?: string
+): Promise<void> {
+  await transaction(
+    projectId,
+    (state) => {
+      state.leadership = {
+        ...state.leadership,
+        ...leadershipUpdate,
+      } as LeadershipState;
+      return state;
+    },
+    projectsDir
+  );
+}
+
+/**
+ * Add a council decision to the project state
+ */
+export async function addCouncilDecision(
+  projectId: string,
+  decision: CouncilDecision,
+  projectsDir?: string
+): Promise<void> {
+  await transaction(
+    projectId,
+    (state) => {
+      if (!state.leadership) {
+        state.leadership = {
+          leaders: [],
+          crossCheckRules: [],
+          disputeResolutionRules: [],
+          crossChecks: [],
+          decisions: [],
+        };
+      }
+      if (!state.leadership.decisions) {
+        state.leadership.decisions = [];
+      }
+      state.leadership.decisions.push(decision);
+      return state;
+    },
+    projectsDir
+  );
+}
+
+/**
+ * Add a cross-check record to the project state
+ */
+export async function addCrossCheck(
+  projectId: string,
+  crossCheck: CrossCheckRequest,
+  projectsDir?: string
+): Promise<void> {
+  await transaction(
+    projectId,
+    (state) => {
+      if (!state.leadership) {
+        state.leadership = {
+          leaders: [],
+          crossCheckRules: [],
+          disputeResolutionRules: [],
+          crossChecks: [],
+          decisions: [],
+        };
+      }
+      if (!state.leadership.crossChecks) {
+        state.leadership.crossChecks = [];
+      }
+      state.leadership.crossChecks.push(crossCheck);
+      return state;
+    },
+    projectsDir
+  );
+}
+
+/**
+ * Update leader status in the team
+ */
+export async function updateLeaderStatus(
+  projectId: string,
+  domain: string,
+  status: TeamMember['status'],
+  projectsDir?: string
+): Promise<void> {
+  await transaction(
+    projectId,
+    (state) => {
+      const leader = state.team.find(
+        (m) => m.layer === 'leader' && m.domain === domain
+      );
+      if (leader) {
+        leader.status = status;
+      }
+      return state;
+    },
+    projectsDir
+  );
 }

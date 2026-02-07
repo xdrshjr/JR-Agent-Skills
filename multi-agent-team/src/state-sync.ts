@@ -25,6 +25,36 @@ export async function syncToMarkdown(
 }
 
 function generateMarkdownContent(state: ProjectState): string {
+  // Leadership section
+  let leadershipSection = '';
+  if (state.leadership && state.leadership.leaders && state.leadership.leaders.length > 0) {
+    const domainLabels: Record<string, string> = { planning: 'Planning Authority (规划权)', execution: 'Execution Authority (执行权)', quality: 'Quality Authority (审判权)' };
+    leadershipSection = `
+## Leadership Council (三权分立)
+
+| Domain | Leader | Expertise |
+|--------|--------|-----------|
+${state.leadership.leaders.map((l: any) => `| ${domainLabels[l.domain] || l.domain} | ${l.roleName} | ${l.expertise} |`).join('\n')}
+
+### Council Decisions
+
+${state.leadership.decisions && state.leadership.decisions.length > 0
+  ? `| Timestamp | Type | Domain | Decision | Outcome |
+|-----------|------|--------|----------|---------|
+${state.leadership.decisions.map((d: any) => `| ${new Date(d.timestamp).toISOString()} | ${d.type} | ${d.primaryDomain} | ${d.decision} | ${d.outcome} |`).join('\n')}`
+  : 'No council decisions recorded yet.'}
+
+### Cross-Checks
+
+${state.leadership.crossChecks && state.leadership.crossChecks.length > 0
+  ? `| ID | Type | Primary | Status | Created |
+|-----|------|---------|--------|---------|
+${state.leadership.crossChecks.map((c: any) => `| ${c.id} | ${c.decisionType} | ${c.primaryDomain} | ${c.status} | ${new Date(c.createdAt).toISOString()} |`).join('\n')}`
+  : 'No cross-checks recorded yet.'}
+
+`;
+  }
+
   return `# Project: ${state.id}
 
 ## Metadata
@@ -40,12 +70,12 @@ function generateMarkdownContent(state: ProjectState): string {
 ## User Request
 
 ${state.userRequest}
-
+${leadershipSection}
 ## Team
 
-| Role | Agent ID | Status | Rework Count | Deliverable |
-|------|----------|--------|--------------|-------------|
-${state.team.map(m => `| ${m.role} | ${m.agentId} | ${m.status} | ${m.reworkCount} | ${m.deliverable || '-'} |`).join('\n')}
+| Role | Layer | Agent ID | Status | Rework Count | Deliverable |
+|------|-------|----------|--------|--------------|-------------|
+${state.team.map(m => `| ${m.role} | ${(m as any).layer || 'executor'} | ${m.agentId} | ${m.status} | ${m.reworkCount} | ${m.deliverable || '-'} |`).join('\n')}
 
 ## Milestones
 
@@ -91,7 +121,7 @@ export async function syncToAgentStatus(
   const filepath = path.join(projectDir, 'agent-status.json');
 
   // Extract agent status from state
-  const agentStatusData = {
+  const agentStatusData: Record<string, any> = {
     projectId: state.id,
     lastUpdate: state.updatedAt,
     agents: state.agentStatus || {},
@@ -99,10 +129,23 @@ export async function syncToAgentStatus(
       role: member.role,
       agentId: member.agentId,
       status: member.status,
+      layer: (member as any).layer || 'executor',
+      domain: (member as any).domain,
       deliverable: member.deliverable,
       reworkCount: member.reworkCount,
     })),
   };
+
+  // Include leadership info if available
+  if (state.leadership && state.leadership.leaders) {
+    agentStatusData.leadership = {
+      leaders: state.leadership.leaders.map((l: any) => ({
+        domain: l.domain,
+        roleName: l.roleName,
+        status: 'active',
+      })),
+    };
+  }
 
   await writeFile(filepath, JSON.stringify(agentStatusData, null, 2), 'utf-8');
 }
@@ -133,13 +176,39 @@ function generateWhiteboardContent(state: ProjectState): string {
     lastUpdate: state.updatedAt,
   };
 
+  // Leadership Council section
+  let leadershipSection = '';
+  if (state.leadership && state.leadership.leaders && state.leadership.leaders.length > 0) {
+    const domainLabels: Record<string, string> = { planning: '规划权', execution: '执行权', quality: '审判权' };
+
+    // Count pending cross-checks per domain
+    const pendingChecks = (state.leadership.crossChecks || [])
+      .filter((c: any) => c.status === 'pending' || c.status === 'objected');
+
+    leadershipSection = `
+## 🏛️ Leadership Council
+
+| 权力域 | Leader | 状态 | 待处理 |
+|--------|--------|------|--------|
+${state.leadership.leaders.map((l: any) => {
+  const pending = pendingChecks.filter((c: any) =>
+    c.requiredSignoffs && c.requiredSignoffs.includes(l.domain) &&
+    !c.signoffs?.some((s: any) => s.domain === l.domain && s.approved)
+  ).length;
+  return `| ${domainLabels[l.domain] || l.domain} | ${l.roleName} | 🟢 Active | ${pending > 0 ? `${pending} pending` : '-'} |`;
+}).join('\n')}
+
+---
+`;
+  }
+
   return `# Team Whiteboard - ${state.id}
 
 **Last Update:** ${whiteboard.lastUpdate}
 **Current Phase:** ${whiteboard.currentPhase}
 
 ---
-
+${leadershipSection}
 ## 👥 Team Members
 
 ${whiteboard.teamMembers.length === 0 ? 'No team members yet.' : whiteboard.teamMembers.map(member =>

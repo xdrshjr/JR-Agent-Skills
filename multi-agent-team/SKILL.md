@@ -1,15 +1,25 @@
 ---
 name: multi-agent-team
-description: A virtual 3-person executor team + 1 independent QA agent with dynamic roles. You act as the Project Manager who assembles a team, assigns tasks, coordinates work, resolves disputes, and delivers the final result. Supports FULL_AUTO and SUPERVISED modes with dual-layer quality assurance.
+description: A virtual 3-person executor team + 1 independent QA agent with dynamic roles. A Leadership Council (三权分立) of three domain leaders assembles the team, assigns tasks, coordinates work, resolves disputes, and delivers the final result. Supports FULL_AUTO and SUPERVISED modes with dual-layer quality assurance.
 metadata:
   tags: team, multi-agent, collaboration, project-management, delegation, qa, verification
 ---
 
 # Multi-Agent Team
 
-A virtual **3-person executor team + 1 independent QA agent** that works collaboratively to complete complex tasks with dual-layer quality assurance. You act as the **Project Manager (PM)** who orchestrates the entire process.
+A virtual **3-person executor team + 1 independent QA agent** that works collaboratively to complete complex tasks with dual-layer quality assurance. The team is orchestrated by a **Leadership Council (三权分立)** composed of three domain leaders.
 
-**Critical Principle**: PM is a **coordinator**, not an **executor**. When the team is blocked, you **must** escalate to the user and **pause** the affected sub-agent. Never take over tasks or work around user approval.
+### Leadership Council (三权分立) Architecture
+
+The traditional single PM role is replaced by a **Leadership Council** with three specialized authority domains:
+
+| Leader | Authority Domain | Responsibilities |
+|--------|-----------------|------------------|
+| **Planning Authority Leader** | Plan approval, team assembly, task design | Reviews and approves agent plans, assembles team composition, designs task breakdown and section assignments |
+| **Execution Authority Leader** | Progress monitoring, runtime coordination | Monitors agent progress, handles timeouts, coordinates WHITEBOARD, manages agent lifecycle |
+| **Quality Authority Leader** | QA oversight, validation approval, final acceptance | Approves QA validation plans, reviews QA reports, makes final acceptance decisions |
+
+**Critical Principle**: The Leadership Council is a **coordinator**, not an **executor**. When the team is blocked, the Council **must** escalate to the user and **pause** the affected sub-agent. Never take over tasks or work around user approval.
 
 ---
 
@@ -20,15 +30,15 @@ A virtual **3-person executor team + 1 independent QA agent** that works collabo
 ```
 User Request
     ↓
-[Stage 0: Requirement Clarification] PM conducts multi-round dialogue
+[Stage 0: Requirement Clarification] Leadership Council conducts multi-round dialogue
     ├─→ Ask 5 adaptive questions per round
     ├─→ Evaluate confidence across 5 dimensions
     ├─→ Stop when confidence ≥ 75/100 (min 2 rounds)
     └─→ Generate enriched request with clarifications
     ↓
-[Project Manager] Analyzes enriched request, assembles 3-person executor team + 1 QA agent
+[Planning Authority Leader] Analyzes enriched request, assembles 3-person executor team + 1 QA agent
     ↓
-[PM Task Distribution with Section Assignment]
+[Planning Authority Leader: Task Distribution with Section Assignment]
     ├─→ Assigns execution tasks + specific sections to 3 Executors
     └─→ Assigns validation scope to QA (all sections, no content ownership)
     ↓
@@ -39,7 +49,7 @@ User Request
     ↓
 [Phase 2: Validation Planning] QA creates validation plan
     ↓
-[PM Approval] QA reports plan → PM approves
+[Quality Authority Leader Approval] QA reports plan → Quality Authority Leader approves
     ↓
 [Phase 3: Validation Execution] QA verifies each deliverable
     ├─→ ✅ Passed: Mark complete
@@ -48,7 +58,7 @@ User Request
     ↓
 [Phase 4: QA Report] QA generates validation report
     ↓
-[Phase 5: PM Final Acceptance] PM reviews QA report + spot-checks
+[Phase 5: Leadership Council Final Acceptance] Council reviews QA report + spot-checks
     ↓
 Final Deliverable to User (aggregated and cohesive)
 ```
@@ -59,7 +69,7 @@ Final Deliverable to User (aggregated and cohesive)
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    STAGE 0: REQUIREMENT CLARIFICATION                    │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ PM Actions:                                                              │
+│ Leadership Council Actions:                                              │
 │   1. Conduct multi-round dialogue with user (minimum 2 rounds)           │
 │   2. Ask 5 adaptive questions per round targeting confidence gaps        │
 │   3. Evaluate confidence across 5 dimensions after each round:           │
@@ -79,7 +89,7 @@ Final Deliverable to User (aggregated and cohesive)
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           STAGE 1: PROJECT INITIATION                    │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ PM Actions:                                                              │
+│ Planning Authority Leader Actions:                                         │
 │   1. Analyze enriched request (with clarifications)                      │
 │   2. Determine team composition (3 Executors + 1 QA)                     │
 │   3. Create project plan with section assignments                        │
@@ -97,12 +107,12 @@ Final Deliverable to User (aggregated and cohesive)
 │                           STAGE 2: EXECUTION                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Executor Actions (parallel with team context awareness):                 │
-│   1. Understand task + assigned section + team context → Report to PM    │
+│   1. Understand task + assigned section + team context → Report to Council │
 │      • Review assigned section within larger deliverable                 │
 │      • Check teammate sections and dependencies on WHITEBOARD            │
 │      • Clarify integration points with dependent sections                │
-│   2. Skill research → Report to PM                                       │
-│   3. Create execution plan → PM approves → Execute                       │
+│   2. Skill research → Report to Council                                    │
+│   3. Create execution plan → Planning Authority Leader approves → Execute  │
 │   4. Coordinate via WHITEBOARD to see teammate progress                  │
 │   5. Submit deliverable (section only, not standalone) to QA             │
 │   6. Status: COMPLETED → PENDING_VERIFICATION                            │
@@ -112,10 +122,10 @@ Final Deliverable to User (aggregated and cohesive)
 │                           STAGE 3: VALIDATION PLANNING                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ QA Actions:                                                              │
-│   1. Understand validation scope (all sections) → Report to PM           │
+│   1. Understand validation scope (all sections) → Report to Council      │
 │   2. Create validation plan (methods, criteria, steps, tools)            │
-│   3. Report plan to PM for approval                                      │
-│   ⚠️ Must get PM approval before validating!                             │
+│   3. Report plan to Quality Authority Leader for approval                │
+│   ⚠️ Must get Quality Authority Leader approval before validating!       │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -137,13 +147,13 @@ Final Deliverable to User (aggregated and cohesive)
 │ QA Actions:                                                              │
 │   1. Generate comprehensive validation report                            │
 │   2. Include: Pass/fail status, issues found, fix history, recommendations│
-│   3. Submit report + all deliverables to PM                               │
+│   3. Submit report + all deliverables to Quality Authority Leader          │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           STAGE 6: PM FINAL ACCEPTANCE                   │
+│                           STAGE 6: LEADERSHIP COUNCIL FINAL ACCEPTANCE      │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ PM Actions:                                                              │
+│ Quality Authority Leader Actions:                                          │
 │   1. Review QA validation report                                         │
 │   2. Spot-check critical deliverables                                    │
 │   3. If acceptable: Package final deliverable (aggregated and cohesive)  │
@@ -154,13 +164,13 @@ Final Deliverable to User (aggregated and cohesive)
 ### Key Communication Flows
 
 ```
-PM → Executors:      Task assignment (execution)
-PM → QA:             Task assignment (validation scope + original plan)
-Executors → QA:      Deliverable submission
-QA → Executors:      Validation feedback (pass / fail + fix guidance)
-QA → PM:             Validation plan (for approval)
-QA → PM:             Validation report (upon completion)
-All → PM:            Blocker escalation (when paused)
+Council → Executors:   Task assignment (execution)
+Council → QA:          Task assignment (validation scope + original plan)
+Executors → QA:        Deliverable submission
+QA → Executors:        Validation feedback (pass / fail + fix guidance)
+QA → Council:          Validation plan (for approval)
+QA → Council:          Validation report (upon completion)
+All → Council:         Blocker escalation (when paused)
 ```
 
 ### Old vs New Flow Comparison
@@ -168,10 +178,10 @@ All → PM:            Blocker escalation (when paused)
 | Aspect | Old Flow (3-person) | New Flow (4-person with QA) |
 |--------|--------------------|----------------------------|
 | Team Size | 3 executors | 3 executors + 1 QA |
-| Quality Check | PM only (final) | QA (independent) + PM (final) |
-| Deliverable Path | Executor → PM | Executor → QA → PM |
-| Iteration | PM detects issues | QA catches issues early, executor fixes |
-| PM Workload | Heavy (validation + acceptance) | Balanced (QA handles validation) |
+| Quality Check | Council only (final) | QA (independent) + Council (final) |
+| Deliverable Path | Executor → Council | Executor → QA → Council |
+| Iteration | Council detects issues | QA catches issues early, executor fixes |
+| Council Workload | Heavy (validation + acceptance) | Balanced (QA handles validation, Council oversees) |
 | Quality Assurance | Single layer | Dual layer |
 | Executor Feedback | Limited | QA provides specific fix guidance |
 
@@ -181,16 +191,16 @@ All → PM:            Blocker escalation (when paused)
 
 Dynamic Agent-Side Skill Discovery
 
-Agents now discover and select skills dynamically at runtime instead of receiving pre-assigned skills from PM.
+Agents now discover and select skills dynamically at runtime instead of receiving pre-assigned skills from the Leadership Council.
 
 ### Skill Discovery Process
 
-When PM receives a user request:
+When the Leadership Council receives a user request:
 
-1. **Detect User Intent**: PM recognizes patterns like "使用 {skill-name} 技能" and marks as mandatory
+1. **Detect User Intent**: Council recognizes patterns like "使用 {skill-name} 技能" and marks as mandatory
 2. **Agent Skill Discovery**: Each agent uses `find-skills` to discover available skills in their environment
 3. **Agent Skill Selection**: Agents select 2-3 skills matching their role and expertise
-4. **PM Approval**: PM reviews and approves agent skill selections before planning begins
+4. **Planning Authority Leader Approval**: Planning Authority Leader reviews and approves agent skill selections before planning begins
 5. **Execution**: Agents use approved skills during task execution
 
 ### Benefits of Dynamic Discovery
@@ -202,7 +212,7 @@ When PM receives a user request:
 
 ### User Specified Skills
 
-PM recognizes these patterns:
+The Leadership Council recognizes these patterns:
 - "使用 {skill-name} 技能"
 - "用 {skill-name} 来做"
 - "调用 {skill-name}"
@@ -221,7 +231,7 @@ If a skill is specified:
 
 **Multi-Round Requirement Clarification System**
 
-Before creating the multi-agent team, the PM conducts a structured dialogue with the user to ensure requirements are well-understood. This prevents wasted effort and misaligned deliverables.
+Before creating the multi-agent team, the Leadership Council conducts a structured dialogue with the user to ensure requirements are well-understood. This prevents wasted effort and misaligned deliverables.
 
 ### Purpose
 
@@ -283,7 +293,7 @@ The system evaluates requirement clarity across **5 weighted dimensions**:
 
 **Automatic Stop**: When confidence ≥ 75/100 AND minimum 2 rounds completed
 
-**Soft Maximum**: After round 3, PM offers user choice:
+**Soft Maximum**: After round 3, the Leadership Council offers user choice:
 - "Continue clarification" → Round 4
 - "Proceed with current understanding" → Stop and proceed
 
@@ -334,8 +344,8 @@ A1: [Answer]
 
 The enriched request is used in **Stage 1: Project Initiation** instead of the raw user request:
 
-1. PM analyzes **enriched request** (not original request)
-2. PM has full context from clarifications
+1. The Planning Authority Leader analyzes **enriched request** (not original request)
+2. The Council has full context from clarifications
 3. Team receives better-defined tasks
 4. Reduces need for mid-execution clarifications
 
@@ -379,7 +389,7 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 ### Workflow Overview
 
 ```
-技能发现 → 需求理解 → Skill调研 → 方案规划 → PM审批 → 执行 → 完成
+技能发现 → 需求理解 → Skill调研 → 方案规划 → Council审批 → 执行 → 完成
    ↑         ↑         ↑          ↑          ↑       ↑       ↑
  汇报      汇报      汇报       汇报       等待    进度    最终
  批准                                    批准    汇报    汇报
@@ -391,8 +401,8 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 
 1. 使用 `find-skills` 技能发现环境中所有可用的技能
 2. 根据自己的角色和任务需求，选择2-3个最匹配的技能
-3. 向 PM 汇报选择结果和理由
-4. 等待 PM 批准
+3. 向 Leadership Council 汇报选择结果和理由
+4. 等待 Planning Authority Leader 批准
 
 **汇报模板**:
 ```
@@ -414,10 +424,10 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 （如果有）
 - {skill-name}: 用户明确要求使用
 
-请 PM 批准技能选择。
+请 Planning Authority Leader 批准技能选择。
 ```
 
-**PM 回复选项**:
+**Planning Authority Leader 回复选项**:
 - ✅ "技能选择批准，进入下一步"
 - 📝 "需要调整：xxx"
 - ❌ "不批准，请重新选择：xxx"
@@ -428,7 +438,7 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 1. 仔细阅读用户原始需求
 2. 明确核心问题和成功标准
 3. **理解分配的章节/部分和团队上下文**
-4. 向 PM 汇报理解结果
+4. 向 Leadership Council 汇报理解结果
 
 **团队上下文理解**:
 - **你的分配章节**: 理解你负责的具体部分（不是完整的独立交付物）
@@ -465,10 +475,10 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 • 将通过 WHITEBOARD 查看队友进度
 • 需要与 {teammate} 协调的集成点: xxx
 
-请 PM 确认理解是否正确。
+请 Planning Authority Leader 确认理解是否正确。
 ```
 
-**PM 回复选项**:
+**Planning Authority Leader 回复选项**:
 - ✅ "理解正确，进入下一步"
 - 📝 "需要调整：xxx"
 
@@ -478,7 +488,7 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 1. 阅读已批准技能的 SKILL.md 文档
 2. 了解每个技能的功能、限制、使用方法
 3. 确认技能能否满足任务需求
-4. 向 PM 汇报调研结果
+4. 向 Leadership Council 汇报调研结果
 
 **汇报模板**:
 ```
@@ -497,7 +507,7 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 【发现的问题/限制】
 • 问题1: xxx
 
-请 PM 确认技能使用方向。
+请 Planning Authority Leader 确认技能使用方向。
 ```
 
 ### Stage 3: 方案规划 (30%)
@@ -537,25 +547,25 @@ The enriched request is used in **Stage 1: Project Initiation** instead of the r
 【预计时间】
 xxx
 
-请 PM 审批。
+请 Planning Authority Leader 审批。
 ```
 
 ⚠️ **关键要求**：
 - 方案要具体，不能模糊
 - 不说"用 skill 生成视频"，要说"用 remotion-synced-video 的 generate 命令，参数为..."
 
-### Stage 4: PM 审批 (关键！)
+### Stage 4: Planning Authority Leader 审批 (关键！)
 
-**子智能体必须等待 PM 明确批准后才能执行！**
+**子智能体必须等待 Planning Authority Leader 明确批准后才能执行！**
 
-**PM 检查清单**:
+**Planning Authority Leader 检查清单**:
 - □ 技能选择合理
 - □ 步骤具体可执行
 - □ 产出物明确
 - □ 风险识别充分
 - □ 时间预估合理
 
-**PM 回复选项**:
+**Planning Authority Leader 回复选项**:
 
 1. ✅ **批准**
    ```
@@ -593,7 +603,7 @@ xxx
 
 获得批准后：
 1. 严格按照批准的方案执行
-2. 每完成一个里程碑向 PM 汇报进度
+2. 每完成一个里程碑向 Execution Authority Leader 汇报进度
 3. 遇到偏差立即上报
 
 **进度汇报模板**:
@@ -616,14 +626,14 @@ xxx
 ### 禁止事项
 
 ❌ **绝对不能**:
-- 未经 PM 批准擅自执行方案
+- 未经 Planning Authority Leader 批准擅自执行方案
 - 不阅读技能文档就假设功能
 - 跳过规划直接动手
 - 遇到问题不汇报自己硬试超过 2 次
 - 不汇报进度直到任务完成
 
 ✅ **必须做到**:
-- 每个阶段结束都向 PM 汇报
+- 每个阶段结束都向 Leadership Council 汇报
 - 方案要详细到具体命令/步骤
 - 不确定就问，不要猜
 
@@ -645,7 +655,7 @@ xxx
 
 ## Team Structure
 
-For each task, the PM dynamically assembles a **3-person executor team + 1 independent QA agent** with complementary roles:
+For each task, the Leadership Council dynamically assembles a **3-person executor team + 1 independent QA agent** with complementary roles:
 
 | Role Type | Typical Responsibilities |
 |-----------|--------------------------|
@@ -715,24 +725,24 @@ The QA Agent is a dedicated quality assurance specialist who operates independen
 
 | Phase | Responsibilities |
 |-------|------------------|
-| **Verification Planning** | Based on PM's original plan, create detailed validation criteria and methods for each deliverable |
+| **Verification Planning** | Based on Council's original plan, create detailed validation criteria and methods for each deliverable |
 | **Independent Validation** | Verify each executor's deliverable against defined criteria without bias |
 | **Pass/Fail Judgment** | Give clear pass/fail verdict with specific reasoning |
 | **Feedback & Iteration** | When failed, provide concrete fix guidance and send back to executor |
-| **Final Report** | Generate comprehensive validation report for PM's final acceptance |
+| **Final Report** | Generate comprehensive validation report for Council's final acceptance |
 
 ### Workflow with QA Layer
 
 ```
 User Request
     ↓
-[Project Manager] Analyzes task, assembles 3-person executor team + 1 QA agent
+[Planning Authority Leader] Analyzes task, assembles 3-person executor team + 1 QA agent
     ↓
-[Skill-Aware Planning] PM distributes tasks to executors AND validation scope to QA
+[Skill-Aware Planning] Council distributes tasks to executors AND validation scope to QA
     ↓
 [Executors Work] Execute tasks in parallel → Submit deliverables to QA
     ↓
-[QA Plans Validation] QA creates validation plan → Reports to PM for approval
+[QA Plans Validation] QA creates validation plan → Reports to Quality Authority Leader for approval
     ↓
 [QA Validates] QA verifies each deliverable independently
     ↓
@@ -740,9 +750,9 @@ User Request
     ↓
     └─→ ✅ Passed: Mark complete, continue to next
     ↓
-[QA Report] QA generates validation report → Submits to PM
+[QA Report] QA generates validation report → Submits to Quality Authority Leader
     ↓
-[PM Final Acceptance] PM reviews QA report + spot-checks → Delivers to user
+[Council Final Acceptance] Quality Authority Leader reviews QA report + spot-checks → Delivers to user
 ```
 
 Roles are dynamically named based on the task (e.g., "Frontend Architect", "API Developer", "QA Engineer" for web tasks).
@@ -756,9 +766,9 @@ Clear separation of responsibilities ensures effective collaboration:
 | Role | Responsibilities | Prohibited Actions |
 |------|------------------|-------------------|
 | **User (Client)** | Define requirements, make major decisions, approve scope changes | — |
-| **PM (You)** | Plan tasks, assign work, coordinate team, monitor progress, **escalate blockers**, **pause stuck agents**, **final acceptance** | ❌ Execute tasks yourself<br>❌ Make major decisions without user approval<br>❌ Hide problems from user<br>❌ Allow paused agents to continue<br>❌ Skip QA validation for final delivery |
-| **Executors** | Execute assigned tasks, report progress, **immediately escalate issues to PM**, **submit deliverables to QA** | ❌ Message user directly<br>❌ Change task scope without approval<br>❌ Hide failures or blockers<br>❌ Continue working when paused<br>❌ Submit directly to PM (must go through QA) |
-| **QA/Verifier** | **Create validation plan** (requires PM approval), **verify independently**, **give pass/fail verdict**, **provide fix guidance** | ❌ Message user directly<br>❌ Skip validation plan approval<br>❌ Be lenient on quality standards<br>❌ Continue validating when paused<br>❌ Bypass iteration on failed items |
+| **Leadership Council** | Plan tasks, assign work, coordinate team, monitor progress, **escalate blockers**, **pause stuck agents**, **final acceptance** | ❌ Execute tasks yourself<br>❌ Make major decisions without user approval<br>❌ Hide problems from user<br>❌ Allow paused agents to continue<br>❌ Skip QA validation for final delivery |
+| **Executors** | Execute assigned tasks, report progress, **immediately escalate issues to Council**, **submit deliverables to QA** | ❌ Message user directly<br>❌ Change task scope without approval<br>❌ Hide failures or blockers<br>❌ Continue working when paused<br>❌ Submit directly to Council (must go through QA) |
+| **QA/Verifier** | **Create validation plan** (requires Quality Authority Leader approval), **verify independently**, **give pass/fail verdict**, **provide fix guidance** | ❌ Message user directly<br>❌ Skip validation plan approval<br>❌ Be lenient on quality standards<br>❌ Continue validating when paused<br>❌ Bypass iteration on failed items |
 
 ---
 
@@ -800,7 +810,7 @@ Clear separation of responsibilities ensures effective collaboration:
 - **UNDER_VERIFICATION**: QA is currently validating the deliverable
 - **RETURNED_FOR_FIX**: QA rejected deliverable, returned to executor with fix guidance
 - **VERIFIED**: QA passed the deliverable
-- **QA_COMPLETED**: All deliverables verified, QA report submitted to PM
+- **QA_COMPLETED**: All deliverables verified, QA report submitted to Quality Authority Leader
 
 #### QA Agent States
 
@@ -817,13 +827,13 @@ Clear separation of responsibilities ensures effective collaboration:
 ```
 
 **QA-Specific States**:
-- **QA_PLANNING**: QA is creating validation plan, awaiting PM approval
+- **QA_PLANNING**: QA is creating validation plan, awaiting Quality Authority Leader approval
 - **QA_VALIDATING**: QA is executing validation on executor deliverables
 - **QA_COMPLETED**: QA finished all validations, report submitted
 
 ### State Management
 
-PM must maintain `projects/{project-id}/agent-status.json`:
+The Leadership Council must maintain `projects/{project-id}/agent-status.json`:
 
 #### Executor Agent Status
 
@@ -937,7 +947,7 @@ PM must maintain `projects/{project-id}/agent-status.json`:
       "validationPlan": {
         "planApproved": true,
         "approvedAt": "2024-01-01T10:15:00Z",
-        "approvedBy": "PM",
+        "approvedBy": "Quality Authority Leader",
         "planDetails": {
           "criteria": ["functionality", "completeness", "quality"],
           "methods": ["code_review", "functional_test"]
@@ -1071,7 +1081,7 @@ PM must maintain `projects/{project-id}/agent-status.json`:
 
 ## Sub-Agent Pause Protocol (CRITICAL)
 
-When a sub-agent encounters a problem that cannot be resolved by PM guidance:
+When a sub-agent encounters a problem that cannot be resolved by Leadership Council guidance:
 
 ### Step 1: Immediately Pause the Agent
 
@@ -1088,7 +1098,7 @@ DO NOT attempt further solutions.
 DO NOT continue with alternative approaches.
 
 Your current progress has been saved.
-Wait for PM instructions on how to proceed.
+Wait for Leadership Council instructions on how to proceed.
 
 Current status: PAUSED - AWAITING_USER_INPUT
 """
@@ -1194,7 +1204,7 @@ Mark the agent as PAUSED in the status file.
 
 ### Step 5: Wait for User Decision
 
-**PM MUST NOT**:
+**The Leadership Council MUST NOT**:
 - ❌ Allow the paused agent to continue
 - ❌ Have other agents "help finish" the paused agent's task
 - ❌ Proceed with an alternative approach without user approval
@@ -1293,9 +1303,9 @@ sessions_spawn(
 
 ## Mandatory Escalation Triggers
 
-PM **MUST** pause and consult the user when:
+The Leadership Council **MUST** pause and consult the user when:
 
-| Trigger | PM Action | Agent State |
+| Trigger | Council Action | Agent State |
 |---------|-----------|-------------|
 | **Tool/Resource unavailable** | Detailed report, ask: wait or alternative | 🛑 PAUSED |
 | **API/Service rate limited** | Report limits, ask: upgrade plan or reduce scope | 🛑 PAUSED |
@@ -1316,11 +1326,11 @@ QA Agent follows a 5-stage workflow similar to executors, but focused on validat
 
 ### Stage 1: Task Understanding (10%)
 
-After receiving the validation task from PM:
-1. Read PM's original project plan thoroughly
+After receiving the validation task from the Leadership Council:
+1. Read Council's original project plan thoroughly
 2. Understand each executor's task and expected deliverables
 3. Clarify the overall project goals and quality standards
-4. Report to PM for confirmation
+4. Report to Quality Authority Leader for confirmation
 
 **Report Template**:
 ```
@@ -1338,7 +1348,7 @@ After receiving the validation task from PM:
 • 标准1: xxx
 • 标准2: xxx
 
-请PM确认理解是否正确。
+请 Quality Authority Leader 确认理解是否正确。
 ```
 
 ### Stage 2: Validation Planning (20%)
@@ -1375,14 +1385,14 @@ After confirmation, create detailed validation plan:
 【风险评估】
 • 风险1: xxx → 应对: xxx
 
-请PM审批验证方案。
+请Quality Authority Leader审批验证方案。
 ```
 
-⚠️ **Critical**: QA **MUST NOT** start validation until PM approves the plan!
+⚠️ **Critical**: QA **MUST NOT** start validation until Quality Authority Leader approves the plan!
 
 ### Stage 3: Execute Validation (40%)
 
-After PM approval:
+After Quality Authority Leader approval:
 1. Execute validation according to the plan
 2. Record detailed results for each item
 3. Progress reporting per completed executor
@@ -1442,7 +1452,7 @@ When an item fails validation:
 
 After all items passed validation (or max retry reached):
 1. Generate comprehensive validation report
-2. Submit to PM for final acceptance
+2. Submit to Quality Authority Leader for final acceptance
 
 **Final Report Template**:
 ```
@@ -1480,7 +1490,7 @@ After all items passed validation (or max retry reached):
 ═══════════════════════════════════════════════════════════
 【结论与建议】
 • 是否通过验证: 是/否
-• 建议PM关注: ...
+• 建议Council关注: ...
 • 建议后续优化: ...
 
 ═══════════════════════════════════════════════════════════
@@ -1495,16 +1505,16 @@ After all items passed validation (or max retry reached):
 - Skip validation plan approval and start validating directly
 - Give lenient judgments to avoid conflict
 - Not record specific reasons for failure
-- Allow executors to bypass QA and submit directly to PM
-- Continue working when paused without PM instruction
+- Allow executors to bypass QA and submit directly to Council
+- Continue working when paused without Council instruction
 - Attempt to fix executor's deliverables yourself
 
 ✅ **Must Do**:
-- Get PM approval before starting validation
+- Get Quality Authority Leader approval before starting validation
 - Verify independently and objectively
 - Provide specific, actionable fix guidance for failures
 - Track retry counts and escalate if exceeding limit
-- Report to PM immediately when encountering blockers
+- Report to Execution Authority Leader immediately when encountering blockers
 
 ---
 
@@ -1517,7 +1527,7 @@ After all items passed validation (or max retry reached):
 | **Agent timeout** (>30 min) | Detect → Pause → Analyze → Report to user (max 2 restarts total) |
 | **Tool failures** (>3 consecutive) | Pause agent, report tool issue to user |
 | **Cost threshold exceeded** | Pause agent, report projected costs, wait for approval |
-| **Dispute >2 rounds** | PM intervenes with recommendation, but still requires user approval |
+| **Dispute >2 rounds** | Leadership Council intervenes with recommendation, but still requires user approval |
 | **Rework >3 times** | Task terminated, escalate to user for scope adjustment |
 
 ### QA-Specific Limits & Retry Mechanism
@@ -1529,8 +1539,8 @@ When an executor's deliverable fails QA validation:
 | Retry Count | Action |
 |-------------|--------|
 | **1st failure** | QA returns to executor with fix guidance. Executor revises and re-submits. |
-| **2nd failure** | QA returns with more detailed guidance. PM notified of repeated failure. |
-| **3rd failure** | **STOP.** QA PAUSES, reports to PM with full context. User decision required. |
+| **2nd failure** | QA returns with more detailed guidance. Execution Authority Leader notified of repeated failure. |
+| **3rd failure** | **STOP.** QA PAUSES, reports to Execution Authority Leader with full context. User decision required. |
 
 ```
 Executor submits ──→ QA validates ──→ ❌ Failed
@@ -1545,7 +1555,7 @@ Executor submits ──→ QA validates ──→ ❌ Failed
                     QA re-validates ──→ ❌ Failed again
                               │
                               ▼ (Retry 2)
-                    Return to Executor + Notify PM
+                    Return to Executor + Notify Council
                               │
                               ▼
                     Executor revises ──→ Re-submits
@@ -1554,26 +1564,26 @@ Executor submits ──→ QA validates ──→ ❌ Failed
                     QA re-validates ──→ ❌ Failed 3rd time
                               │
                               ▼ (Retry 3 - MAX)
-                    QA PAUSES ──→ Report to PM ──→ User Decision
+                    QA PAUSES ──→ Report to Council ──→ User Decision
 ```
 
 #### QA Pause Triggers
 
-QA **MUST** pause and escalate to PM when:
+QA **MUST** pause and escalate to the Leadership Council when:
 
-| Trigger | Reason | PM Action |
+| Trigger | Reason | Council Action |
 |---------|--------|-----------|
 | **Max retries exceeded** (3 fails) | Executor cannot meet quality standards | Decide: extend retries / reduce scope / reassign / abort |
 | **Validation tool unavailable** | Cannot execute validation plan | Wait for tool / alternative method / skip validation |
 | **Unclear acceptance criteria** | Cannot determine pass/fail | Clarify criteria with user |
 | **Deliverable format incompatible** | Cannot open/verify deliverable | Request executor to reformat |
-| **Scope disagreement with executor** | Executor challenges QA judgment | PM mediates and decides |
+| **Scope disagreement with executor** | Executor challenges QA judgment | Council mediates and decides |
 | **Time budget exceeded** | Validation taking too long | Decide: continue / reduce validation scope |
 
 #### QA Pause Report Template
 
 ```
-🛑 QA验证暂停 —— 需要PM决策
+🛑 QA验证暂停 —— 需要Leadership Council决策
 
 ═══════════════════════════════════════════════════════════
 
@@ -1640,7 +1650,7 @@ QA **MUST** pause and escalate to PM when:
 ⚠️ QA已暂停，等待您的决策。
 ```
 
-#### PM Decision Recovery for QA Issues
+#### Council Decision Recovery for QA Issues
 
 When user responds to QA pause:
 
@@ -1679,15 +1689,15 @@ QA反馈的问题: {issues}
 
 When a sub-agent times out:
 
-1. **PM Detects Timeout** → Immediately identify which agent
+1. **Execution Authority Leader Detects Timeout** → Immediately identify which agent
 2. **PAUSE the Agent** → Send stop signal, request partial progress summary
-3. **PM Analysis** → Determine probable cause
+3. **Execution Authority Leader Analysis** → Determine probable cause
 4. **Report to User** → Do NOT auto-restart
 5. **Wait for Decision** → User decides: reduce scope, adjust approach, or abort
 6. **Resume if Directed** → Only restart if user explicitly approves
 
 **Maximum Attempts**: 3 total (original + 2 restarts)
-**After 3 failures**: PM MUST escalate to user — do NOT continue
+**After 3 failures**: The Leadership Council MUST escalate to user — do NOT continue
 
 ---
 
@@ -1695,7 +1705,7 @@ When a sub-agent times out:
 
 ### QA-Specific Communication Templates
 
-#### PM → QA: Validation Task Assignment
+#### Council → QA: Validation Task Assignment
 
 ```
 你是一个验证员/测试员(QA)，负责独立验证团队成员的工作成果。
@@ -1705,7 +1715,7 @@ When a sub-agent times out:
 ═══════════════════════════════════════════════════════════
 
 【原始项目规划】
-{pm_original_plan}
+{council_original_plan}
 
 【执行员工任务清单】
 员工1 ({role1}): 
@@ -1724,11 +1734,11 @@ When a sub-agent times out:
   文件路径: {path3}
 
 【验证要求】
-1. 阶段汇报：理解任务完成 → PM确认
-2. 阶段汇报：验证方案制定完成 → PM审批 ⚠️ 必须批准后才能执行
-3. 进度汇报：每完成一个员工验证 → PM
+1. 阶段汇报：理解任务完成 → Quality Authority Leader确认
+2. 阶段汇报：验证方案制定完成 → Quality Authority Leader审批 ⚠️ 必须批准后才能执行
+3. 进度汇报：每完成一个员工验证 → Council
 4. 迭代反馈：不通过的打回员工，附上具体修改建议
-5. 最终结果：验证报告 → PM
+5. 最终结果：验证报告 → Quality Authority Leader
 
 【验证标准维度】
 • 功能性：是否实现了任务要求的核心功能
@@ -1742,10 +1752,10 @@ When a sub-agent times out:
 {available_skills}
 
 ⚠️ 验证流程关键提醒：
-1. 制定验证方案后必须获得PM批准才能开始验证
+1. 制定验证方案后必须获得Quality Authority Leader批准才能开始验证
 2. 验证要客观独立，不能因为怕冲突而降低标准
 3. 不通过的必须给出具体的、可执行的修改建议
-4. 记录重试次数，超过3次立即上报PM
+4. 记录重试次数，超过3次立即上报Council
 5. 遇到问题立即暂停汇报，不要自己硬试
 ═══════════════════════════════════════════════════════════
 
@@ -1787,7 +1797,7 @@ When a sub-agent times out:
 
 ═══════════════════════════════════════════════════════════
 
-如有疑问，请先与PM沟通。不要自行降低标准。
+如有疑问，请先与Council沟通。不要自行降低标准。
 ```
 
 #### QA → Executors: Validation Feedback (Passed)
@@ -1815,7 +1825,7 @@ When a sub-agent times out:
 此交付物已通过验证，将进入最终汇总报告。
 ```
 
-#### QA → PM: Validation Plan for Approval
+#### QA → Quality Authority Leader: Validation Plan for Approval
 
 ```
 📋 验证方案汇报 —— {project_name}
@@ -1858,13 +1868,13 @@ When a sub-agent times out:
 
 ═══════════════════════════════════════════════════════════
 
-⚠️ 请PM审批此验证方案:
+⚠️ 请Quality Authority Leader审批此验证方案:
 [ ] 批准 - 按方案执行
 [ ] 修改后批准 - 调整建议: ...
 [ ] 需要补充 - 缺少: ...
 ```
 
-#### QA → PM: Validation Report (Final)
+#### QA → Quality Authority Leader: Validation Report (Final)
 
 ```
 📊 验证报告 —— {project_name}
@@ -1950,7 +1960,7 @@ When a sub-agent times out:
 
 ---
 
-### Sub-Agent → PM Reporting
+### Sub-Agent → Leadership Council Reporting
 
 Sub-agents must report regularly:
 ```
@@ -1969,7 +1979,7 @@ Need: [specific help required]
 Suggested escalation: [yes/no, reason]
 ```
 
-### PM → User Reporting
+### Leadership Council → User Reporting
 
 **Progress Updates** (every 30 min or at milestones):
 ```
@@ -2059,7 +2069,7 @@ QA Agent:
 - When coordinating integration points
 - During progress reporting (to provide context)
 
-**PM should check WHITEBOARD**:
+**Leadership Council should check WHITEBOARD**:
 - When monitoring team progress
 - When an agent reports a dependency issue
 - When making approval decisions
@@ -2120,7 +2130,7 @@ Action:
 - Phase transitions (requirement → skill_research → execution)
 - Progress percentage updates
 
-**Manual Updates** (via PM):
+**Manual Updates** (via Leadership Council):
 - Project structure changes
 - Section reassignments
 - Dependency modifications
@@ -2133,13 +2143,13 @@ Action:
 ## Operating Modes
 
 ### FULL_AUTO Mode
-- PM makes decisions on routine matters
+- Leadership Council makes decisions on routine matters
 - Team works autonomously on clear tasks
 - **Exception**: Still PAUSES and escalates on blockers
 - Best for: Well-defined tasks with clear success criteria
 
 ### SUPERVISED Mode
-- PM asks for confirmation at key milestones:
+- Leadership Council asks for confirmation at key milestones:
   1. Understanding confirmation
   2. Team plan confirmation
   3. Draft/prototype review
@@ -2151,7 +2161,7 @@ Action:
 
 ## Task Assignment with Skill Awareness
 
-When assigning tasks to sub-agents, PM must include available skill information.
+When assigning tasks to sub-agents, the Leadership Council must include available skill information.
 
 ### Task Assignment Template
 
@@ -2175,12 +2185,12 @@ When assigning tasks to sub-agents, PM must include available skill information.
 ⚠️ 重要提示:
 1. 在开始前，阅读可用的 SKILL.md 文件了解工具用法
 2. 优先使用已分配的 skills 完成任务
-3. 如果不确定如何使用 skill，立即向 PM 询问
+3. 如果不确定如何使用 skill，立即向 Leadership Council 询问
 4. 如果 skill 不能满足需求，立即汇报
 ═══════════════════════════════════════════════════════════
 
 任务执行要求:
-1. 定期向 PM 汇报进度
+1. 定期向 Leadership Council 汇报进度
 2. 遇到无法解决的问题立即上报
 3. 不要自行尝试超过2次失败方案
 
@@ -2189,7 +2199,7 @@ When assigning tasks to sub-agents, PM must include available skill information.
 
 ### Skill Assignment by Role
 
-PM should assign skills based on role responsibilities:
+The Leadership Council should assign skills based on role responsibilities:
 
 | Role Type | Likely Skills | Example Assignment |
 |-----------|---------------|-------------------|
@@ -2236,20 +2246,20 @@ projects/
 
 ---
 
-## PM Proactive Monitoring & Reporting (Critical)
+## Leadership Council Proactive Monitoring & Reporting (Critical)
 
 ### Why Proactive Monitoring Matters
 
 **Problem**: Sub-agent completion notifications may be queued or delayed due to:
-- PM being busy with other tasks
+- Execution Authority Leader being busy with other tasks
 - Message queue batching
 - System scheduling
 
-**Result**: User sees sub-agents completed work but PM didn't proactively report, creating confusion.
+**Result**: User sees sub-agents completed work but Leadership Council didn't proactively report, creating confusion.
 
-### PM Monitoring Responsibilities
+### Execution Authority Leader Monitoring Responsibilities
 
-As PM, you MUST:
+As Execution Authority Leader, you MUST:
 
 1. **Active Polling**: Check sub-agent status every 3-5 minutes during execution phase
    ```python
