@@ -61,7 +61,7 @@ ${projectBrief.roles.map(r =>
   let leadershipSection = '';
   if (projectBrief && projectBrief.leadership) {
     const leaders = projectBrief.leadership.leaders || [];
-    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
+    const domainLabels = { planning: '规划权', execution: '执行权', quality: '质量权' };
     leadershipSection = `
 ## 🏛️ Leadership Council (三权分立)
 
@@ -72,10 +72,10 @@ ${leaders.map(l =>
 ).join('\n')}
 
 **交叉审批机制:**
-- 团队组建方案: 规划权(主) + 执行权(可行性) + 审判权(可测性)
+- 团队组建方案: 规划权(主) + 执行权(可行性) + 质量权(可测性)
 - Agent执行计划: 规划权(主) + 执行权(资源评估)
-- QA验证计划: 审判权(主) + 规划权(需求覆盖)
-- 交付物验收: 审判权(主) + 规划权(需求符合)
+- QA验证计划: 质量权(主) + 规划权(需求覆盖)
+- 交付物验收: 质量权(主) + 规划权(需求符合)
 
 ---
 `;
@@ -87,7 +87,7 @@ ${leaders.map(l =>
 |--------|--------|------|--------|
 | 规划权 | Planning Director | 🟢 Active | - |
 | 执行权 | Operations Director | 🟢 Active | - |
-| 审判权 | Quality Director | 🟢 Active | - |
+| 质量权 | Quality Director | 🟢 Active | - |
 
 ---
 `;

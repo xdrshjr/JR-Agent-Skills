@@ -73,8 +73,19 @@ async function readCrossChecks(projectDir: string): Promise<CrossCheckRequest[]>
   if (!existsSync(filePath)) {
     return [];
   }
-  const data = await readFile(filePath, 'utf-8');
-  return JSON.parse(data);
+  try {
+    const data = await readFile(filePath, 'utf-8');
+    if (!data.trim()) {
+      return [];
+    }
+    return JSON.parse(data);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error(`Corrupted cross-checks.json at ${filePath}: ${error.message}`);
+      return [];
+    }
+    throw error;
+  }
 }
 
 async function writeCrossChecks(
@@ -111,6 +122,14 @@ export async function createCrossCheck(
 
   return withLock(lockPath, async () => {
     const checks = await readCrossChecks(projectDir);
+
+    // Validate inputs
+    if (requiredSignoffs.includes(primaryDomain)) {
+      throw new Error('Primary domain cannot be in requiredSignoffs');
+    }
+    if (requiredSignoffs.length === 0) {
+      throw new Error('At least one required signoff domain is needed');
+    }
 
     const newCheck: CrossCheckRequest = {
       id: generateId(),
@@ -226,6 +245,15 @@ export async function respondToObjection(
     const check = checks.find((c) => c.id === checkId);
     if (!check) {
       throw new Error(`Cross-check ${checkId} not found`);
+    }
+    if (check.status !== 'objected') {
+      throw new Error(`Cross-check ${checkId} is ${check.status}, cannot respond to objections`);
+    }
+
+    // Validate that toDomain actually has an active objection
+    const hasActiveObjection = check.objections.some((o) => o.fromDomain === toDomain);
+    if (!hasActiveObjection) {
+      throw new Error(`${toDomain} has not raised an objection on cross-check ${checkId}`);
     }
 
     check.responses.push({
@@ -356,7 +384,7 @@ export async function getPendingCrossChecks(
   // Return checks where this domain needs to sign off
   return pending.filter(
     (c) =>
-      c.requiredSignoffs.includes(domain) &&
+      (c.primaryDomain === domain || c.requiredSignoffs.includes(domain)) &&
       !c.signoffs.some((s) => s.domain === domain && s.approved)
   );
 }

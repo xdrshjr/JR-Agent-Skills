@@ -18,7 +18,7 @@ The leadership layer consists of three constant power domains with dynamically g
 |-------------|-----------|-------------------|---------------------|
 | **Planning Authority (规划权)** | `PLANNING` | Requirements, architecture, plan approval | Scope, plans, task assignment |
 | **Execution Authority (执行权)** | `EXECUTION` | Resources, progress, coordination | Resource allocation, timeouts, strategy |
-| **Quality Authority (审判权)** | `QUALITY` | QA standards, validation, acceptance | Quality standards, acceptance, delivery |
+| **Quality Authority (质量权)** | `QUALITY` | QA standards, validation, acceptance | Quality standards, acceptance, delivery |
 
 Leader role names are generated dynamically per task type (e.g., "System Architect" for code, "Content Strategist" for documents).
 

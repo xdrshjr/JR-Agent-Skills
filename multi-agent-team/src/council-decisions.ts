@@ -47,8 +47,19 @@ async function readDecisions(projectDir: string): Promise<CouncilDecision[]> {
   if (!existsSync(filePath)) {
     return [];
   }
-  const data = await readFile(filePath, 'utf-8');
-  return JSON.parse(data);
+  try {
+    const data = await readFile(filePath, 'utf-8');
+    if (!data.trim()) {
+      return [];
+    }
+    return JSON.parse(data);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error(`Corrupted council-decisions.json at ${filePath}: ${error.message}`);
+      return [];
+    }
+    throw error;
+  }
 }
 
 async function writeDecisions(
@@ -100,7 +111,10 @@ export async function recordDecision(
 export async function getDecisionHistory(
   projectDir: string
 ): Promise<CouncilDecision[]> {
-  return readDecisions(projectDir);
+  const lockPath = path.join(projectDir, '.council-decisions.lock');
+  return withLock(lockPath, async () => {
+    return readDecisions(projectDir);
+  });
 }
 
 /**

@@ -66,7 +66,7 @@ This project is led by a 3-member Leadership Council:
 |-------------|---------------|---------------|
 | **Planning Authority (规划权)** | Plans, scope, requirements | Plan submissions, skill selection, scope questions |
 | **Execution Authority (执行权)** | Progress, resources, blockers | Progress updates, resource requests, blockers |
-| **Quality Authority (审判权)** | QA, validation, acceptance | Deliverable submissions (via QA), quality questions |
+| **Quality Authority (质量权)** | QA, validation, acceptance | Deliverable submissions (via QA), quality questions |
 
 ---
 
@@ -279,7 +279,7 @@ If not, your status update will be REJECTED with an error.
 - 从"方案规划"直接跳到"执行"
 
 ✅ **必须**：
-- 每步汇报（计划→规划权Leader，进度→执行权Leader，交付→审判权Leader）
+- 每步汇报（计划→规划权Leader，进度→执行权Leader，交付→质量权Leader）
 - 方案具体
 - 不确定就问
 - 先发现技能再规划

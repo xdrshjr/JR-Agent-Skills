@@ -1491,7 +1491,7 @@ roles:
 # Each project gets 3 leaders representing the three power domains:
 #   - Planning Authority (规划权): Requirements, plans, scope
 #   - Execution Authority (执行权): Resources, progress, coordination
-#   - Quality Authority (审判权): QA, validation, acceptance
+#   - Quality Authority (质量权): QA, validation, acceptance
 
 leadership_templates:
   code:

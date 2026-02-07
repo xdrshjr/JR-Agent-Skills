@@ -6,7 +6,7 @@
 |--------|--------|-----------------|
 | **Planning Authority (规划权)** | Dynamic per task type | Requirements, plans, scope, architecture |
 | **Execution Authority (执行权)** | Dynamic per task type | Resources, progress, coordination, timeouts |
-| **Quality Authority (审判权)** | Dynamic per task type | QA, validation, acceptance, final delivery |
+| **Quality Authority (质量权)** | Dynamic per task type | QA, validation, acceptance, final delivery |
 
 ## Cross-Check Protocol
 

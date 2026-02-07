@@ -568,6 +568,7 @@ export function getAgentsAwaitingApproval(projectDir: string): string[] {
  */
 export default {
   WorkflowPhase,
+  PowerDomain,
   mapStageToPhase,
   initializePhaseState,
   getPhaseState,

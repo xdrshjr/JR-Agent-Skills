@@ -7,9 +7,6 @@
  * Core Principle: Three power domains are constant; leader role names are dynamic.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-
 // ============================================================================
 // Core Types
 // ============================================================================
@@ -269,16 +266,19 @@ const DEFAULT_DISPUTE_RULES: DisputeRule[] = [
  * Generate leadership configuration based on task type and description
  */
 export function generateLeadership(
-  taskType: string,
-  taskDescription: string
+  taskType: string
 ): LeadershipConfig {
   const normalizedType = normalizeTaskType(taskType);
-  const template = LEADERSHIP_TEMPLATES[normalizedType] || LEADERSHIP_TEMPLATES.default;
+  const template = LEADERSHIP_TEMPLATES[normalizedType];
+  if (!template) {
+    console.warn(`Unknown task type '${normalizedType}', using default template`);
+  }
+  const selectedTemplate = template || LEADERSHIP_TEMPLATES.default;
 
   const leaders: LeaderRole[] = [
-    buildLeaderRole(PowerDomain.PLANNING, template.planning),
-    buildLeaderRole(PowerDomain.EXECUTION, template.execution),
-    buildLeaderRole(PowerDomain.QUALITY, template.quality),
+    buildLeaderRole(PowerDomain.PLANNING, selectedTemplate.planning),
+    buildLeaderRole(PowerDomain.EXECUTION, selectedTemplate.execution),
+    buildLeaderRole(PowerDomain.QUALITY, selectedTemplate.quality),
   ];
 
   return {
@@ -502,7 +502,7 @@ function domainLabel(domain: PowerDomain): string {
   const labels: Record<PowerDomain, string> = {
     [PowerDomain.PLANNING]: 'Planning Authority (规划权)',
     [PowerDomain.EXECUTION]: 'Execution Authority (执行权)',
-    [PowerDomain.QUALITY]: 'Quality Authority (审判权)',
+    [PowerDomain.QUALITY]: 'Quality Authority (质量权)',
   };
   return labels[domain];
 }

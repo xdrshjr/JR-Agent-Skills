@@ -28,7 +28,7 @@ function generateMarkdownContent(state: ProjectState): string {
   // Leadership section
   let leadershipSection = '';
   if (state.leadership && state.leadership.leaders && state.leadership.leaders.length > 0) {
-    const domainLabels: Record<string, string> = { planning: 'Planning Authority (规划权)', execution: 'Execution Authority (执行权)', quality: 'Quality Authority (审判权)' };
+    const domainLabels: Record<string, string> = { planning: 'Planning Authority (规划权)', execution: 'Execution Authority (执行权)', quality: 'Quality Authority (质量权)' };
     leadershipSection = `
 ## Leadership Council (三权分立)
 
@@ -179,7 +179,7 @@ function generateWhiteboardContent(state: ProjectState): string {
   // Leadership Council section
   let leadershipSection = '';
   if (state.leadership && state.leadership.leaders && state.leadership.leaders.length > 0) {
-    const domainLabels: Record<string, string> = { planning: '规划权', execution: '执行权', quality: '审判权' };
+    const domainLabels: Record<string, string> = { planning: '规划权', execution: '执行权', quality: '质量权' };
 
     // Count pending cross-checks per domain
     const pendingChecks = (state.leadership.crossChecks || [])

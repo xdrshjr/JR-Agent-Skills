@@ -4,7 +4,7 @@
  * Replaces the single PM model with a 3-leader council:
  * - Planning Authority (规划权): Requirements, plans, scope
  * - Execution Authority (执行权): Resources, progress, coordination
- * - Quality Authority (审判权): QA, validation, acceptance
+ * - Quality Authority (质量权): QA, validation, acceptance
  */
 
 const fs = require('fs');
@@ -19,7 +19,7 @@ try {
   try {
     stateManager = require('./dist/state-manager');
   } catch (e) {
-    console.error('❌ State manager not available, using legacy file operations');
+    console.warn('⚠️ State manager not available, using legacy file operations');
   }
 }
 
@@ -59,18 +59,6 @@ try {
   }
 }
 
-// Import unified state manager
-let stateManager;
-try {
-  stateManager = require('./src/state-manager');
-} catch (error) {
-  try {
-    stateManager = require('./dist/state-manager');
-  } catch (e) {
-    console.error('❌ State manager not available, using legacy file operations');
-  }
-}
-
 // Import requirement clarification system
 let requirementClarification;
 try {
@@ -93,6 +81,9 @@ function resolveProjectsDir(explicitDir) {
 }
 
 const PROJECTS_DIR = resolveProjectsDir();
+
+// Domain label constants (三权分立)
+const DOMAIN_LABELS = { planning: '规划权', execution: '执行权', quality: '质量权' };
 
 /**
  * 检查是否存在相似项目
@@ -250,7 +241,6 @@ async function initializeProject(userRequest, options = {}) {
     // 6. 初始化白板
     try {
       const { initializeWhiteboard } = require('./whiteboard');
-      const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
 
       // Create projectBrief for whiteboard
       const projectBrief = {
@@ -821,28 +811,6 @@ function generateAgentTask(projectInfo, agentRole, agentIndex) {
 }
 
 /**
- * DEPRECATED: 生成技能使用指南部分
- *
- * This function is deprecated. Agents now discover skills dynamically
- * at runtime instead of receiving pre-assigned skills.
- */
-function generateSkillGuideSection(skills) {
-  // Deprecated - return notice about dynamic skill discovery
-  return `
-═══════════════════════════════════════════════════════════
-🛠️ 技能发现
-═══════════════════════════════════════════════════════════
-
-⚠️ 注意: 静态技能分配已弃用
-
-请使用 find-skills 技能动态发现你环境中可用的所有技能，
-然后根据你的角色选择最适合的技能，并向 PM 报告等待批准。
-
-═══════════════════════════════════════════════════════════
-`;
-}
-
-/**
  * 更新代理状态
  */
 async function updateAgentStatus(projectDir, agentId, statusUpdate) {
@@ -1073,12 +1041,14 @@ function approveAgentPlan(projectDir, agentRole, approverIdentifier = 'Planning-
     }
 
     // Check if fully approved (all required domains)
-    const fullyApproved = phaseStateMachine.isFullyApproved
-      ? phaseStateMachine.isFullyApproved(phaseStateMachine.getPhaseState(projectDir, agentRole).approval)
-      : true;
+    if (!phaseStateMachine.isFullyApproved) {
+      throw new Error('Phase state machine isFullyApproved method not available - cannot verify approval');
+    }
+    const fullyApproved = phaseStateMachine.isFullyApproved(
+      phaseStateMachine.getPhaseState(projectDir, agentRole).approval
+    );
 
-    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
-    const domainLabel = domainLabels[domain] || domain;
+    const domainLabel = DOMAIN_LABELS[domain] || domain;
 
     if (fullyApproved) {
       console.log(`✅ 领导层全部批准 ${agentRole} 的方案，可以开始执行`);
@@ -1134,7 +1104,7 @@ function approveAgentPlan(projectDir, agentRole, approverIdentifier = 'Planning-
  *
  * Integrated with phase state machine and council decision recording
  */
-function rejectAgentPlan(projectDir, agentRole, reason, rejecterIdentifier = 'Planning-Leader', domain = 'planning') {
+async function rejectAgentPlan(projectDir, agentRole, reason, rejecterIdentifier = 'Planning-Leader', domain = 'planning') {
   // Import phase state machine
   let phaseStateMachine;
   try {
@@ -1150,22 +1120,21 @@ function rejectAgentPlan(projectDir, agentRole, reason, rejecterIdentifier = 'Pl
 
   try {
     // Revoke approval if granted
-    phaseStateMachine.revokeApproval(projectDir, agentRole);
+    await phaseStateMachine.revokeApproval(projectDir, agentRole);
 
     // Transition back to plan_design phase
-    const transitionResult = phaseStateMachine.transitionPhase(
+    const transitionResult = await phaseStateMachine.transitionPhase(
       projectDir,
       agentRole,
       phaseStateMachine.WorkflowPhase.PLAN_DESIGN,
-      pmIdentifier
+      rejecterIdentifier
     );
 
     if (!transitionResult.valid) {
       throw new Error(`Transition failed: ${transitionResult.reason}`);
     }
 
-    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
-    const domainLabel = domainLabels[domain] || domain;
+    const domainLabel = DOMAIN_LABELS[domain] || domain;
 
     console.log(`⚠️ ${domainLabel} 拒绝 ${agentRole} 的方案，要求修改`);
 
@@ -1821,8 +1790,7 @@ async function approveValidationPlan(projectDir, qaAgentRole, approverIdentifier
       path.dirname(projectDir)
     );
 
-    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
-    const domainLabel = domainLabels[domain] || domain;
+    const domainLabel = DOMAIN_LABELS[domain] || domain;
 
     console.log(`✅ ${domainLabel} 批准 ${qaAgentRole} 的验证计划，可以开始验证`);
 
@@ -1866,13 +1834,12 @@ async function rejectValidationPlan(projectDir, qaAgentRole, reason, rejecterIde
       path.basename(projectDir),
       qaAgentRole,
       'rejected',
-      pmIdentifier,
+      rejecterIdentifier,
       reason,
       path.dirname(projectDir)
     );
 
-    const domainLabels = { planning: '规划权', execution: '执行权', quality: '审判权' };
-    const domainLabel = domainLabels[domain] || domain;
+    const domainLabel = DOMAIN_LABELS[domain] || domain;
 
     console.log(`⚠️ ${domainLabel} 拒绝 ${qaAgentRole} 的验证计划，要求修改`);
 
@@ -2035,7 +2002,7 @@ function initializeLeadership(taskType, taskDescription) {
     };
   }
 
-  return leadership.generateLeadership(taskType, taskDescription);
+  return leadership.generateLeadership(taskType);
 }
 
 /**
@@ -2110,7 +2077,7 @@ async function conductCrossCheck(projectDir, decisionType, primaryDomain, decisi
   // Get required signoffs from leadership config
   let requiredSignoffs = [];
   if (leadership) {
-    const config = leadership.generateLeadership('default', '');
+    const config = leadership.generateLeadership('default');
     const rule = config.crossCheckRules.find(r => r.decisionType === decisionType);
     if (rule) {
       requiredSignoffs = rule.requiredSignoffs;
