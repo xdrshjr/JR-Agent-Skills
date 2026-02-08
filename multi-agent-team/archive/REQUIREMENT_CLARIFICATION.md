@@ -26,7 +26,7 @@ src/
 
 ### Integration Point
 
-**File**: `pm-workflow.js`
+**File**: `council-workflow.js` (recommended) or `pm-workflow.js` (backward compatibility bridge)
 **Location**: Between skill planning and team assembly (after line 106)
 
 ```javascript
@@ -43,6 +43,8 @@ const skillPlanning = initializeSkillAwarePlanning(enrichedRequest);
 // 3. Team Assembly (uses enriched request)
 const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis, enrichedRequest);
 ```
+
+**Note**: `pm-workflow.js` is a backward compatibility bridge that re-exports from `council-workflow.js`.
 
 ## Confidence Dimensions
 
@@ -414,7 +416,7 @@ After round 3:
 If you see "Requirement clarification not available":
 1. Ensure TypeScript files are compiled: `npx tsc`
 2. Check that `dist/requirement-clarification.js` exists
-3. Verify imports in `pm-workflow.js`
+3. Verify imports in `council-workflow.js` or `pm-workflow.js` (backward compatibility bridge)
 
 ### Questions Not Adaptive
 

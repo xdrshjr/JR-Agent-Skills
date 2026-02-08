@@ -147,13 +147,13 @@ User Request → Requirement Clarification → Leadership Generation → Team As
 
 **PM Approval Functions**:
 ```javascript
-const { approveAgentPlan, rejectAgentPlan, getAgentsAwaitingApproval } = require('./pm-workflow');
+const { approveAgentPlan, rejectAgentPlan, getAgentsAwaitingApproval } = require('./council-workflow');
 
 // Approve agent plan
-approveAgentPlan(projectDir, 'Frontend Developer', 'PM-001');
+approveAgentPlan(projectDir, 'Frontend Developer', 'Planning-Leader', 'planning');
 
 // Reject and request revision
-rejectAgentPlan(projectDir, 'Backend Developer', '需要添加错误处理', 'PM-001');
+rejectAgentPlan(projectDir, 'Backend Developer', '需要添加错误处理', 'Planning-Leader', 'planning');
 
 // Check who's waiting
 const waiting = getAgentsAwaitingApproval(projectDir);
@@ -307,8 +307,8 @@ When QA rejects a deliverable:
 
 ### Documentation
 - `SKILL.md` (1816 lines): Complete skill specification with all protocols
-- `PM_QUICKREF.md`: Quick reference card for PM pause protocol
-- `PM_CHECKLIST.md`: Detailed checklist for PM operations
+- `COUNCIL_QUICKREF.md`: Quick reference card for Leadership Council operations
+- `COUNCIL_CHECKLIST.md`: Detailed checklist for Leadership Council operations
 - `README.md`: User-facing quick start guide
 
 ### Project Tracking
@@ -687,6 +687,5 @@ This project has a pre-generated index for quick codebase understanding.
 - Full specification: `SKILL.md`
 - Leadership council quick reference: `COUNCIL_QUICKREF.md`
 - Leadership council checklist: `COUNCIL_CHECKLIST.md`
-- Legacy PM quick reference: `PM_QUICKREF.md`
-- Example workflows: `examples/` directory
-- Skill guides: `skill-guides/` directory
+- Example workflows: `examples/` directory (if available)
+- Skill guides: `skill-guides/` directory (if available)

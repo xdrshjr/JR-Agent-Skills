@@ -5,7 +5,10 @@ A virtual **3-person executor team + 1 independent QA agent** that collaborates 
 ## What You Get
 
 - **Requirement Clarification** to ensure clear understanding before starting
-- **Project Manager** who orchestrates everything
+- **Leadership Council (三权分立)** with three domain leaders who coordinate everything
+  - Planning Authority Leader - approves plans and task design
+  - Execution Authority Leader - monitors progress and handles coordination
+  - Quality Authority Leader - oversees QA validation and final acceptance
 - **3 Dynamic Team Members** assembled for your specific task
 - **Independent QA Agent** who validates all deliverables
 - **Two Modes**: Full Auto (hands-off) or Supervised (you control milestones)
@@ -19,12 +22,12 @@ Simply describe what you need:
 Build a Chrome extension that highlights text on webpages and saves to a notes panel
 ```
 
-The PM will:
+The Leadership Council will:
 1. **Clarify requirements** through adaptive Q&A (2-3 rounds)
 2. Analyze your task with enriched understanding
 3. Propose a 3-person executor team + 1 QA agent configuration
 4. Ask you to choose FULL_AUTO or SUPERVISED mode
-5. Execute and deliver
+5. Coordinate execution and deliver
 
 ## Examples
 
@@ -66,9 +69,9 @@ The PM will:
 ## Team Dynamics
 
 - **Parallel Work**: Team members work on their subtasks simultaneously
-- **Direct Collaboration**: They can communicate directly when needed
-- **PM Oversight**: Project Manager monitors progress and resolves disputes
-- **Safeguards**: 2-round dispute limit, 3-time rework limit
+- **Direct Collaboration**: They can communicate via WHITEBOARD when needed
+- **Leadership Oversight**: Three domain leaders coordinate progress and resolve disputes
+- **Safeguards**: Multi-domain approval, cross-check protocol, 3-time rework limit
 
 ## Project Tracking
 
@@ -81,12 +84,12 @@ projects/
 
 ## Tips for Best Results
 
-1. **Answer clarification questions thoughtfully** - the PM will ask 5 questions per round to understand your needs
+1. **Answer clarification questions thoughtfully** - the Leadership Council will ask 5 questions per round to understand your needs
 2. **Be specific** about requirements and constraints during clarification
 3. **Choose mode based on complexity** - use SUPERVISED for critical tasks
 4. **Review the proposed team** - you can suggest role adjustments
 5. **Provide feedback** during milestones in SUPERVISED mode
-6. **Trust the process** - disputes and reworks are normal in teamwork
+6. **Trust the process** - the Leadership Council uses checks and balances for quality
 
 ## Configuration
 
@@ -116,7 +119,7 @@ export CLAWD_PROJECTS_DIR="/path/to/your/projects"
    - Verify path in `~/.claude/config.json` or set `CLAWD_PROJECTS_DIR`
 
 2. **Agent Timeout**
-   - PM automatically restarts agent (max 2 restarts)
+   - Execution Authority Leader automatically restarts agent (max 2 restarts)
    - After 3 failures, escalates to user
 
 3. **QA Validation Failure**
@@ -133,11 +136,11 @@ export CLAWD_PROJECTS_DIR="/path/to/your/projects"
 ```
 User Request
     ↓
-[PM] Analyze → Assemble Team → Choose Mode
+[Leadership Council] Clarify → Analyze → Assemble Team → Choose Mode
     ↓
-[Agent 1] ←→ [Agent 2] ←→ [Agent 3]
+[Agent 1] ←→ [Agent 2] ←→ [Agent 3] → [QA Agent]
     ↓
-[PM] Review → Aggregate → Deliver
+[Leadership Council] Multi-Domain Review → Aggregate → Deliver
 ```
 
 ---
