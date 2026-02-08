@@ -16,6 +16,18 @@ const fs = require('fs');
 const path = require('path');
 const { initializeSkillAwarePlanning } = require('./skill-aware-planning');
 
+// Import section assignment module (extracted from this file)
+let sectionAssignment;
+try {
+  sectionAssignment = require('./dist/workflow/section-assignment');
+} catch (error) {
+  try {
+    sectionAssignment = require('./src/workflow/section-assignment');
+  } catch (e) {
+    console.warn('⚠️  Section assignment module not available, using inline functions');
+  }
+}
+
 // === SIMPLIFIED MODULE LOADING ===
 // Load core modules using utility (eliminates 5× try-catch blocks)
 let stateManager, leadership, crossCheck, councilDecisions, requirementClarification;
@@ -568,15 +580,18 @@ function generateTeamSuggestion(analysis, userRequest = '') {
 
 /**
  * Assign specific sections/parts to each role based on task type
+ * REFACTORED: Now uses src/workflow/section-assignment.ts
  */
 function assignSectionsToRoles(roles, analysis) {
-  const taskType = detectTaskType(analysis);
+  if (sectionAssignment && sectionAssignment.assignSectionsToRoles) {
+    return sectionAssignment.assignSectionsToRoles(roles, analysis);
+  }
 
-  // Separate QA from executors - QA validates all sections, doesn't own one
+  // Fallback: inline implementation (kept for backward compatibility)
+  const taskType = detectTaskType(analysis);
   const executors = roles.filter(r => r.role !== 'QA Reviewer');
   const qa = roles.find(r => r.role === 'QA Reviewer');
 
-  // Assign sections to executors only
   let assignedExecutors;
   switch (taskType) {
     case 'document':
@@ -598,13 +613,12 @@ function assignSectionsToRoles(roles, analysis) {
       assignedExecutors = assignGenericParts(executors, analysis);
   }
 
-  // Add QA back with special section indicating they validate all sections
   if (qa) {
     assignedExecutors.push({
       ...qa,
       assignedSection: 'Quality Assurance & Validation (All Sections)',
-      sectionOrder: 999, // After all executors
-      dependencies: assignedExecutors.map(e => e.role) // Depends on all executors
+      sectionOrder: 999,
+      dependencies: assignedExecutors.map(e => e.role)
     });
   }
 
@@ -613,29 +627,39 @@ function assignSectionsToRoles(roles, analysis) {
 
 /**
  * Detect task type from analysis
+ * REFACTORED: Now uses src/workflow/section-assignment.ts
  */
 function detectTaskType(analysis) {
-  const types = analysis.detectedTypes || [];
+  if (sectionAssignment && sectionAssignment.detectTaskType) {
+    return sectionAssignment.detectTaskType(analysis);
+  }
 
+  // Fallback
+  const types = analysis.detectedTypes || [];
   if (types.includes('document') || types.includes('writing')) return 'document';
   if (types.includes('code') || types.includes('development')) return 'code';
   if (types.includes('research') || types.includes('analysis')) return 'research';
   if (types.includes('design') || types.includes('image')) return 'design';
   if (types.includes('video')) return 'video';
-
   return 'generic';
 }
 
 /**
- * Assign document sections (e.g., Chapter 1, Chapter 2, etc.)
+ * Section Assignment Helper Functions
+ * REFACTORED: Extracted to src/workflow/section-assignment.ts
+ * These are thin wrappers that delegate to the module (with fallback)
  */
+
 function assignDocumentSections(roles, analysis) {
+  if (sectionAssignment?.assignDocumentSections) {
+    return sectionAssignment.assignDocumentSections(roles, analysis);
+  }
+  // Fallback
   const sections = [
     { title: '1. Executive Summary & Introduction', order: 1 },
     { title: '2. Main Content & Analysis', order: 2 },
     { title: '3. Conclusions & Recommendations', order: 3 }
   ];
-
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: sections[idx]?.title || `Section ${idx + 1}`,
@@ -644,16 +668,16 @@ function assignDocumentSections(roles, analysis) {
   }));
 }
 
-/**
- * Assign code modules (e.g., Backend API, Frontend UI, Database)
- */
 function assignCodeModules(roles, analysis) {
+  if (sectionAssignment?.assignCodeModules) {
+    return sectionAssignment.assignCodeModules(roles, analysis);
+  }
+  // Fallback
   const modules = [
     { name: 'Backend API & Business Logic', order: 1 },
     { name: 'Frontend UI & User Experience', order: 2 },
     { name: 'Database Schema & Data Layer', order: 3 }
   ];
-
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: modules[idx]?.name || `Module ${idx + 1}`,
@@ -662,16 +686,16 @@ function assignCodeModules(roles, analysis) {
   }));
 }
 
-/**
- * Assign research areas (e.g., Literature Review, Methodology, Results)
- */
 function assignResearchAreas(roles, analysis) {
+  if (sectionAssignment?.assignResearchAreas) {
+    return sectionAssignment.assignResearchAreas(roles, analysis);
+  }
+  // Fallback
   const areas = [
     { name: 'Literature Review & Background', order: 1 },
     { name: 'Methodology & Data Collection', order: 2 },
     { name: 'Results & Discussion', order: 3 }
   ];
-
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: areas[idx]?.name || `Research Area ${idx + 1}`,
@@ -680,16 +704,16 @@ function assignResearchAreas(roles, analysis) {
   }));
 }
 
-/**
- * Assign design components (e.g., Visual Design, Interaction Design, Assets)
- */
 function assignDesignComponents(roles, analysis) {
+  if (sectionAssignment?.assignDesignComponents) {
+    return sectionAssignment.assignDesignComponents(roles, analysis);
+  }
+  // Fallback
   const components = [
     { name: 'Visual Design & Branding', order: 1 },
     { name: 'Interaction Design & UX Flow', order: 2 },
     { name: 'Assets & Design System', order: 3 }
   ];
-
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: components[idx]?.name || `Design Component ${idx + 1}`,
@@ -698,16 +722,16 @@ function assignDesignComponents(roles, analysis) {
   }));
 }
 
-/**
- * Assign video production components
- */
 function assignVideoComponents(roles, analysis) {
+  if (sectionAssignment?.assignVideoComponents) {
+    return sectionAssignment.assignVideoComponents(roles, analysis);
+  }
+  // Fallback
   const components = [
     { name: 'Script & Storyboard', order: 1 },
     { name: 'Visual Assets & Graphics', order: 2 },
     { name: 'Audio & Final Assembly', order: 3 }
   ];
-
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: components[idx]?.name || `Video Component ${idx + 1}`,
@@ -716,10 +740,11 @@ function assignVideoComponents(roles, analysis) {
   }));
 }
 
-/**
- * Generic part assignment for mixed/unknown task types
- */
 function assignGenericParts(roles, analysis) {
+  if (sectionAssignment?.assignGenericParts) {
+    return sectionAssignment.assignGenericParts(roles, analysis);
+  }
+  // Fallback
   return roles.map((role, idx) => ({
     ...role,
     assignedSection: `Part ${idx + 1}: ${role.responsibility}`,
@@ -728,61 +753,44 @@ function assignGenericParts(roles, analysis) {
   }));
 }
 
-/**
- * Determine code dependencies between roles
- */
 function determineCodeDependencies(role, allRoles) {
+  if (sectionAssignment?.determineCodeDependencies) {
+    return sectionAssignment.determineCodeDependencies(role, allRoles);
+  }
+  // Fallback
   const roleKeywords = {
     backend: ['backend', 'api', 'server', 'service'],
-    frontend: ['frontend', 'ui', 'client', 'web', 'interface'],
-    database: ['database', 'db', 'data', 'storage']
+    frontend: ['frontend', 'ui', 'client', 'web', 'interface']
   };
-
   const roleLower = role.role.toLowerCase();
-
-  // Backend has no dependencies
-  if (roleKeywords.backend.some(kw => roleLower.includes(kw))) {
-    return [];
-  }
-
-  // Frontend depends on Backend
+  if (roleKeywords.backend.some(kw => roleLower.includes(kw))) return [];
   if (roleKeywords.frontend.some(kw => roleLower.includes(kw))) {
     const backend = allRoles.find(r =>
       roleKeywords.backend.some(kw => r.role.toLowerCase().includes(kw))
     );
     return backend ? [backend.role] : [];
   }
-
-  // Database has no dependencies
   return [];
 }
 
-/**
- * Determine design dependencies between roles
- */
 function determineDesignDependencies(role, allRoles) {
+  if (sectionAssignment?.determineDesignDependencies) {
+    return sectionAssignment.determineDesignDependencies(role, allRoles);
+  }
+  // Fallback
   const roleKeywords = {
     visual: ['visual', 'graphic', 'brand', 'style'],
     interaction: ['interaction', 'ux', 'experience', 'flow'],
     assets: ['asset', 'resource', 'component', 'system']
   };
-
   const roleLower = role.role.toLowerCase();
-
-  // Visual design comes first
-  if (roleKeywords.visual.some(kw => roleLower.includes(kw))) {
-    return [];
-  }
-
-  // Interaction design depends on visual design
+  if (roleKeywords.visual.some(kw => roleLower.includes(kw))) return [];
   if (roleKeywords.interaction.some(kw => roleLower.includes(kw))) {
     const visual = allRoles.find(r =>
       roleKeywords.visual.some(kw => r.role.toLowerCase().includes(kw))
     );
     return visual ? [visual.role] : [];
   }
-
-  // Assets depend on both visual and interaction
   if (roleKeywords.assets.some(kw => roleLower.includes(kw))) {
     const deps = allRoles.filter(r => {
       const rLower = r.role.toLowerCase();
@@ -791,8 +799,6 @@ function determineDesignDependencies(role, allRoles) {
     });
     return deps.map(d => d.role);
   }
-
-  // Default: no dependencies
   return [];
 }
 
