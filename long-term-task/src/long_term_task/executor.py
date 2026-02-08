@@ -85,16 +85,16 @@ class Executor:
             # 分步模式：只执行下一步
             if step_mode:
                 current_state = self.state_manager.load()
-                current_step = current_state.get("current_step", 0)
+                step_idx = current_state.get("current_step", 0)
 
-                if current_step >= len(goals):
+                if step_idx >= len(goals):
                     print(f"[Executor] 所有步骤已完成")
                     self.progress_tracker.stop(success=True)
                     self._release_lock(success=True)
                     return True
 
-                goal = goals[current_step]
-                print(f"[Executor] 执行步骤 {current_step + 1}/{len(goals)}: {goal}")
+                goal = goals[step_idx]
+                print(f"[Executor] 执行步骤 {step_idx + 1}/{len(goals)}: {goal}")
 
                 # 执行当前步骤 (BEFORE updating state)
                 step_result = self._execute_goal(goal, config)
@@ -102,20 +102,26 @@ class Executor:
                 if not step_result["success"]:
                     success = False
                     error_msg = step_result.get("error", "Unknown error")
+                    # 记录失败的目标，便于调试和恢复
+                    self.state_manager.update(lambda s: {
+                        **s,
+                        "current_goal": goal,
+                        "last_error": error_msg,
+                    })
                 else:
                     # Only update state AFTER successful execution
                     self.state_manager.update(lambda s: {
                         **s,
-                        "current_step": current_step + 1,
+                        "current_step": step_idx + 1,
                         "current_goal": goal,
-                        "progress_percent": ((current_step + 1) / len(goals)) * 100,
+                        "progress_percent": ((step_idx + 1) / len(goals)) * 100,
                     })
 
                     # 上报步骤完成
-                    self.progress_tracker.on_step_complete(current_step + 1)
+                    self.progress_tracker.on_step_complete(step_idx + 1)
 
                 # 检查是否完成
-                is_completed = success and (current_step + 1 >= len(goals))
+                is_completed = success and (step_idx + 1 >= len(goals))
 
                 # 停止进度追踪
                 self.progress_tracker.stop(success=success, error=error_msg, is_completed=is_completed)
@@ -130,14 +136,14 @@ class Executor:
             current_state = self.state_manager.load()
             start_step = current_state.get("current_step", 0)
 
-            for i in range(start_step, len(goals)):
+            for step_idx in range(start_step, len(goals)):
                 if self._interrupted:
                     success = False
                     error_msg = "Interrupted"
                     break
 
-                goal = goals[i]
-                print(f"[Executor] 执行步骤 {i+1}/{len(goals)}: {goal}")
+                goal = goals[step_idx]
+                print(f"[Executor] 执行步骤 {step_idx+1}/{len(goals)}: {goal}")
 
                 # 执行步骤 (BEFORE updating state)
                 step_result = self._execute_goal(goal, config)
@@ -145,18 +151,24 @@ class Executor:
                 if not step_result["success"]:
                     success = False
                     error_msg = step_result.get("error", "Unknown error")
+                    # 记录失败的目标，便于调试和恢复
+                    self.state_manager.update(lambda s: {
+                        **s,
+                        "current_goal": goal,
+                        "last_error": error_msg,
+                    })
                     break
 
                 # Only update state AFTER successful execution
                 self.state_manager.update(lambda s: {
                     **s,
-                    "current_step": i + 1,
+                    "current_step": step_idx + 1,
                     "current_goal": goal,
-                    "progress_percent": ((i + 1) / len(goals)) * 100,
+                    "progress_percent": ((step_idx + 1) / len(goals)) * 100,
                 })
 
                 # 上报步骤完成
-                self.progress_tracker.on_step_complete(i + 1)
+                self.progress_tracker.on_step_complete(step_idx + 1)
             
             # 停止进度追踪
             self.progress_tracker.stop(success=success, error=error_msg)
