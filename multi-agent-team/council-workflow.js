@@ -1014,6 +1014,32 @@ function startPeriodicMonitoring(projectDir, intervalMinutes = 3) {
         console.log(`📊 监控状态: ${stats.activeAgents} 个活跃Agent, ${stats.activeStages} 个活跃阶段`);
       }
 
+      // 显示 Leadership Council 活动
+      try {
+        const leadershipActivity = require('./src/leadership-activity');
+        const recentActivities = await leadershipActivity.getRecentActivities(
+          projectDir,
+          intervalMinutes  // 获取上个汇报周期以来的活动
+        );
+
+        if (recentActivities.length > 0) {
+          console.log(`\n🏛️ Leadership Council 活动 (最近 ${intervalMinutes} 分钟):\n`);
+          recentActivities.forEach(activity => {
+            const time = new Date(activity.timestamp).toLocaleTimeString('zh-CN', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            console.log(`   [${time}] ${activity.summary}`);
+          });
+          console.log('');
+        }
+      } catch (error) {
+        // Silently ignore if leadership-activity module is not available yet
+        if (error.code !== 'MODULE_NOT_FOUND') {
+          console.warn('⚠️ 无法获取 Leadership 活动:', error.message);
+        }
+      }
+
     } catch (error) {
       console.error(`❌ 监控检查失败: ${error.message}`);
     }

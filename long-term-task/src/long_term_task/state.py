@@ -2,36 +2,59 @@
 
 import json
 import os
-import fcntl
+import sys
 import threading
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Callable, Optional
 from contextlib import contextmanager
 
+# Platform-specific imports for file locking
+if sys.platform == 'win32':
+    import msvcrt
+else:
+    import fcntl
+
 
 class FileLock:
-    """跨平台文件锁（Unix 用 fcntl，Windows 需 msvcrt）"""
-    
+    """跨平台文件锁（Unix 用 fcntl，Windows 用 msvcrt）"""
+
     def __init__(self, lock_path: Path):
         self.lock_path = Path(lock_path)
         self.lock_file = None
-        
+
     def acquire(self):
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self.lock_file = open(self.lock_path, "w")
-        fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_EX)
-        
+        self.lock_file = open(self.lock_path, "a+")  # Use "a+" for both read and write
+
+        if sys.platform == 'win32':
+            # Windows: use msvcrt.locking
+            # Seek to beginning and lock 1 byte (sufficient for lock file)
+            self.lock_file.seek(0)
+            msvcrt.locking(self.lock_file.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            # Unix: use fcntl.flock
+            fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_EX)
+
     def release(self):
         if self.lock_file:
-            fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_UN)
+            if sys.platform == 'win32':
+                # Windows: seek to beginning before unlocking
+                try:
+                    self.lock_file.seek(0)
+                    msvcrt.locking(self.lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    # Already unlocked or file closed, ignore
+                    pass
+            else:
+                fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_UN)
             self.lock_file.close()
             self.lock_file = None
-            
+
     def __enter__(self):
         self.acquire()
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
 
@@ -43,7 +66,6 @@ class StateManager:
         self.task_dir = Path(task_dir)
         self.state_path = self.task_dir / "state.json"
         self.lock_path = self.task_dir / "state.lock"
-        self._local = threading.local()
         
     def ensure_task_dir(self):
         """确保任务目录存在"""
@@ -58,12 +80,7 @@ class StateManager:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return self._default_state()
-    
-    def load_locked(self) -> Dict[str, Any]:
-        """加锁加载状态"""
-        with FileLock(self.lock_path):
-            return self.load()
-    
+
     def update(self, updater: Callable[[Dict], Dict]) -> Dict[str, Any]:
         """原子更新状态"""
         with FileLock(self.lock_path):
@@ -117,7 +134,7 @@ class StateManager:
             last_dt = datetime.fromisoformat(last_report)
             elapsed = (datetime.now() - last_dt).total_seconds() / 60
             return elapsed > timeout_minutes
-        except:
+        except Exception:
             return True
     
     def mark_orphaned(self):

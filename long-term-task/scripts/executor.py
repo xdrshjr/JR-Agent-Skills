@@ -254,7 +254,8 @@ def try_auto_fix(task_id: str, last_error: str) -> bool:
     
     # 修复1: 网络/超时错误 - 指数退避等待
     if any(kw in last_error.lower() for kw in ["network", "connection", "timeout", "unable to connect"]):
-        retry_count = config.get("retry_count", 0)
+        state = load_execution_state(task_id)
+        retry_count = state.get("retry_count", 0)
         wait_time = min(2 ** retry_count * 5, 300)  # 最多5分钟
         print(f"[executor] 检测到网络错误，等待 {wait_time} 秒后重试...")
         time.sleep(wait_time)
@@ -284,7 +285,7 @@ def try_auto_fix(task_id: str, last_error: str) -> bool:
                     try:
                         os.chmod(script, 0o755)
                         fixed_count += 1
-                    except:
+                    except Exception:
                         pass
             if fixed_count > 0:
                 fixes_applied.append(f"修复 {fixed_count} 个脚本权限")
@@ -305,7 +306,7 @@ def try_auto_fix(task_id: str, last_error: str) -> bool:
     
     # 记录修复尝试
     log_path = task_dir / "auto_fix_log.md"
-    timestamp = datetime.now().strftime("Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_entry = f"\n## [{timestamp}] 自动修复尝试\n\n"
     log_entry += f"**错误摘要**: {last_error[:200]}...\n\n"
     

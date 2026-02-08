@@ -19,6 +19,40 @@ def get_tasks_dir() -> Path:
 TASKS_DIR = get_tasks_dir()
 INDEX_FILE = TASKS_DIR / "index.md"
 
+def get_task_dir(task_id: str) -> Path:
+    """
+    获取任务目录
+    优先精确匹配，如果没有则尝试模糊匹配（只返回第一个匹配）
+    """
+    task_id_str = str(task_id)
+
+    # 首先尝试精确匹配
+    for d in TASKS_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        # 精确匹配: task-{task_id}-name 或 task-{task_id}
+        if d.name.startswith(f"task-{task_id_str}-") or d.name == f"task-{task_id_str}":
+            return d
+
+    # 如果没有精确匹配，尝试模糊匹配（兼容旧任务）
+    matches = []
+    for d in TASKS_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        if d.name.startswith(f"task-{task_id_str}"):
+            matches.append(d)
+
+    if len(matches) == 1:
+        return matches[0]
+    elif len(matches) > 1:
+        # 多个匹配，返回第一个但打印警告
+        print(f"[task_manager] 警告: 找到多个匹配目录: {[d.name for d in matches]}")
+        print(f"[task_manager] 使用第一个: {matches[0].name}")
+        return matches[0]
+
+    # 没有匹配，返回默认路径
+    return TASKS_DIR / f"task-{task_id_str}"
+
 def get_next_task_id() -> str:
     """获取下一个任务ID"""
     existing = [d for d in TASKS_DIR.iterdir() if d.is_dir() and d.name.startswith("task-")]
@@ -56,7 +90,7 @@ def list_all_tasks() -> list:
                         "type": config.get("type"),
                         "dir": str(task_dir)
                     })
-                except:
+                except Exception:
                     pass
     return tasks
 
@@ -282,7 +316,7 @@ def update_index(task_id: str, name: str, display_name: str, task_type: str):
     entry += f"- **ID**: {task_id}\n"
     entry += f"- **名称**: {name}\n"
     entry += f"- **类型**: {task_type}\n"
-    entry += f"- **创建时间**: {datetime.now().strftime("%Y-%m-%d")}\n"
+    entry += f"- **创建时间**: {datetime.now().strftime('%Y-%m-%d')}\n"
     entry += f"- **目录**: `task-{task_id}-{name}/`\n"
     
     with open(INDEX_FILE, "a") as f:
@@ -475,18 +509,12 @@ def register_task_cron_jobs(task_id: str, name: str, frequency: str = "daily") -
         "failed": [],
         "manual_commands": []
     }
-    
-    # 检查是否在 Moltbot 环境中
-    try:
-        # 尝试导入或使用 cron 工具
-        # 实际注册需要调用者（主智能体）使用 cron.add 工具
-        result["status"] = "manual_required"
-        result["message"] = "请在 Moltbot 中使用 cron.add 工具注册以下 jobs"
-        result["configs"] = configs
-    except Exception as e:
-        result["status"] = "error"
-        result["error"] = str(e)
-    
+
+    # 实际注册需要调用者（主智能体）使用 cron.add 工具
+    result["status"] = "manual_required"
+    result["message"] = "请在 Moltbot 中使用 cron.add 工具注册以下 jobs"
+    result["configs"] = configs
+
     return result
 
 # 示例用法

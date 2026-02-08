@@ -12,6 +12,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { withLock } from './state-lock';
 import { PowerDomain } from './leadership';
+import { recordActivity, createSummary } from './leadership-activity';
 
 // ============================================================================
 // Types
@@ -154,6 +155,23 @@ export async function createCrossCheck(
 
     checks.push(newCheck);
     await writeCrossChecks(projectDir, checks);
+
+    // Record leadership activity
+    try {
+      await recordActivity(projectDir, {
+        type: 'cross_check_created',
+        primaryDomain,
+        summary: createSummary(
+          'cross_check_created',
+          primaryDomain,
+          `${decisionType} - ${decisionReason}`
+        ),
+        relatedCrossCheckId: newCheck.id,
+      });
+    } catch (error) {
+      console.warn('⚠️ Failed to record leadership activity:', error instanceof Error ? error.message : String(error));
+    }
+
     return newCheck;
   });
 }
@@ -212,6 +230,40 @@ export async function signoffCrossCheck(
     }
 
     await writeCrossChecks(projectDir, checks);
+
+    // Record leadership activity
+    try {
+      if (approved) {
+        await recordActivity(projectDir, {
+          type: 'approval_granted',
+          primaryDomain: domain,
+          summary: createSummary(
+            'approval_granted',
+            domain,
+            `${check.decisionType}${reason ? ' - ' + reason : ''}`
+          ),
+          relatedCrossCheckId: checkId,
+        });
+      } else {
+        await recordActivity(projectDir, {
+          type: 'objection_raised',
+          primaryDomain: domain,
+          summary: createSummary(
+            'objection_raised',
+            domain,
+            `${check.decisionType} - ${reason || '未说明理由'}`
+          ),
+          relatedCrossCheckId: checkId,
+        });
+
+        // Critical event: Real-time notification
+        console.log(`\n🚨 [关键决策点] ${domain} 对 ${check.decisionType} 提出异议\n`);
+        console.log(`   异议理由: ${reason}\n`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to record leadership activity:', error instanceof Error ? error.message : String(error));
+    }
+
     return check;
   });
 }
@@ -287,6 +339,28 @@ export async function respondToObjection(
     }
 
     await writeCrossChecks(projectDir, checks);
+
+    // Record leadership activity
+    try {
+      const activityType = resolved ? 'objection_resolved' : 'objection_responded';
+      await recordActivity(projectDir, {
+        type: activityType,
+        primaryDomain: check.primaryDomain,
+        summary: createSummary(
+          activityType,
+          check.primaryDomain,
+          `${check.decisionType} - ${response.substring(0, 50)}${response.length > 50 ? '...' : ''}`
+        ),
+        relatedCrossCheckId: checkId,
+      });
+
+      if (resolved) {
+        console.log(`\n✅ [权力制衡] 异议已解决: ${check.decisionType}\n`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to record leadership activity:', error instanceof Error ? error.message : String(error));
+    }
+
     return check;
   });
 }
@@ -313,6 +387,27 @@ export async function escalateToUser(
     check.resolvedAt = Date.now();
 
     await writeCrossChecks(projectDir, checks);
+
+    // Record leadership activity
+    try {
+      await recordActivity(projectDir, {
+        type: 'escalated_to_user',
+        primaryDomain: check.primaryDomain,
+        summary: createSummary(
+          'escalated_to_user',
+          check.primaryDomain,
+          `${check.decisionType} - ${reason}`
+        ),
+        relatedCrossCheckId: checkId,
+      });
+
+      // Critical event: Real-time notification
+      console.log(`\n🚨🚨 [升级至用户] ${check.decisionType} 需要您的决策\n`);
+      console.log(`   升级理由: ${reason}\n`);
+    } catch (error) {
+      console.warn('⚠️ Failed to record leadership activity:', error instanceof Error ? error.message : String(error));
+    }
+
     return check;
   });
 }

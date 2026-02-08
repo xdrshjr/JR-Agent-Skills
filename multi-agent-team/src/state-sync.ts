@@ -4,8 +4,10 @@
  */
 
 import * as path from 'path';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { ProjectState, TeamMember, AgentStatus } from './state-manager';
+import type { LeadershipActivity } from './leadership-activity';
 
 // ============================================================================
 // Sync to Markdown Project File
@@ -198,6 +200,21 @@ ${state.leadership.leaders.map((l: any) => {
   return `| ${domainLabels[l.domain] || l.domain} | ${l.roleName} | 🟢 Active | ${pending > 0 ? `${pending} pending` : '-'} |`;
 }).join('\n')}
 
+### 📋 Recent Leadership Activity
+
+${state.leadershipActivity && state.leadershipActivity.length > 0 ?
+  state.leadershipActivity
+    .sort((a: any, b: any) => b.timestamp - a.timestamp)
+    .slice(0, 5)
+    .map((activity: any) => {
+      const time = new Date(activity.timestamp).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      return `- **[${time}]** ${activity.summary}`;
+    }).join('\n')
+  : '- 暂无活动记录'}
+
 ---
 `;
   }
@@ -257,6 +274,28 @@ ${agent.timeoutHistory && agent.timeoutHistory.length > 0 ? `- **Timeout History
 // ============================================================================
 
 /**
+ * Load leadership activities from leadership-activity.json
+ */
+async function loadLeadershipActivities(
+  projectDir: string
+): Promise<LeadershipActivity[]> {
+  const activityPath = path.join(projectDir, 'leadership-activity.json');
+  if (!existsSync(activityPath)) {
+    return [];
+  }
+  try {
+    const data = await readFile(activityPath, 'utf-8');
+    if (!data.trim()) {
+      return [];
+    }
+    return JSON.parse(data);
+  } catch (error) {
+    console.warn('⚠️ Failed to load leadership activities:', error instanceof Error ? error.message : String(error));
+    return [];
+  }
+}
+
+/**
  * Sync state.json to all derived views
  */
 export async function syncAll(
@@ -264,6 +303,16 @@ export async function syncAll(
   state: ProjectState,
   projectDir: string
 ): Promise<void> {
+  // Load leadership activities from separate file and merge into state
+  try {
+    const activities = await loadLeadershipActivities(projectDir);
+    if (activities.length > 0) {
+      state.leadershipActivity = activities;
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to sync leadership activities:', error instanceof Error ? error.message : String(error));
+  }
+
   await Promise.all([
     syncToMarkdown(projectId, state, projectDir),
     syncToAgentStatus(projectId, state, projectDir),

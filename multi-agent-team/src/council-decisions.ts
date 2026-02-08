@@ -10,6 +10,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { withLock } from './state-lock';
 import { PowerDomain } from './leadership';
+import { recordActivity, createSummary } from './leadership-activity';
 
 // ============================================================================
 // Types
@@ -101,6 +102,24 @@ export async function recordDecision(
 
     decisions.push(record);
     await writeDecisions(projectDir, decisions);
+
+    // Record leadership activity
+    try {
+      const activityType = record.outcome === 'approved' ? 'decision_approved' : 'decision_rejected';
+      await recordActivity(projectDir, {
+        type: activityType,
+        primaryDomain: record.primaryDomain,
+        summary: createSummary(
+          activityType,
+          record.primaryDomain,
+          `${record.type} - ${record.decision.substring(0, 50)}${record.decision.length > 50 ? '...' : ''}`
+        ),
+        relatedDecisionId: record.id,
+      });
+    } catch (error) {
+      console.warn('⚠️ Failed to record leadership activity:', error instanceof Error ? error.message : String(error));
+    }
+
     return record;
   });
 }

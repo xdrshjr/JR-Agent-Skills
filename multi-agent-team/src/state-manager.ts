@@ -13,6 +13,7 @@ import { EventEmitter } from 'events';
 import type { LeaderRole, CrossCheckRule, DisputeRule } from './leadership';
 import type { CrossCheckRequest } from './cross-check';
 import type { CouncilDecision } from './council-decisions';
+import type { LeadershipActivity } from './leadership-activity';
 
 // ============================================================================
 // Types
@@ -40,6 +41,7 @@ export interface ProjectState {
   agentStatus?: Record<string, AgentStatus>; // Real-time agent execution state
   whiteboard?: WhiteboardState; // Team communication board
   leadership?: LeadershipState; // Leadership council state (separation of powers)
+  leadershipActivity?: LeadershipActivity[]; // Leadership activity timeline (power-balancing interactions)
 }
 
 export interface TeamMember {

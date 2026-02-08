@@ -6,10 +6,15 @@
 
 import sys
 import json
+import os
 from pathlib import Path
 
-# 添加路径
-SCRIPT_DIR = Path.home() / "clawd" / "skills" / "long-term-task" / "scripts"
+# 添加路径 - 支持环境变量覆盖
+skill_dir = os.environ.get("LTT_SKILL_DIR")
+if skill_dir:
+    SCRIPT_DIR = Path(skill_dir) / "scripts"
+else:
+    SCRIPT_DIR = Path.home() / "clawd" / "skills" / "long-term-task" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from task_manager import create_task
@@ -50,11 +55,11 @@ def example_create_learning_task():
     
     print("\n" + "-" * 60)
     print("执行心跳配置:")
-    print(json.dumps(result['exec_job'], indent=2, ensure_ascii=False))
-    
+    print(json.dumps(result['cron_configs']['exec_job'], indent=2, ensure_ascii=False))
+
     print("\n" + "-" * 60)
     print("检查心跳配置:")
-    print(json.dumps(result['check_job'], indent=2, ensure_ascii=False))
+    print(json.dumps(result['cron_configs']['check_job'], indent=2, ensure_ascii=False))
     
     print("\n" + "=" * 60)
     print("下一步操作:")
@@ -108,9 +113,9 @@ def print_cron_setup_instructions(result: dict):
     
     task_id = result['task_id']
     name = result['name']
-    
-    exec_job = result['exec_job']
-    check_job = result['check_job']
+
+    exec_job = result['cron_configs']['exec_job']
+    check_job = result['cron_configs']['check_job']
     
     print(f"""
 # 注册执行心跳
