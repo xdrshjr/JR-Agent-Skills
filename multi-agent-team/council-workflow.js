@@ -5,73 +5,87 @@
  * - Planning Authority (规划权): Requirements, plans, scope
  * - Execution Authority (执行权): Resources, progress, coordination
  * - Quality Authority (质量权): QA, validation, acceptance
+ *
+ * REFACTORED: Using code-simplifier principles
+ * - Simplified module loading (loadCoreModules)
+ * - Extracted constants (src/constants.ts)
+ * - Reduced code duplication
  */
 
 const fs = require('fs');
 const path = require('path');
 const { initializeSkillAwarePlanning } = require('./skill-aware-planning');
 
-// Import unified state manager
-let stateManager;
+// === SIMPLIFIED MODULE LOADING ===
+// Load core modules using utility (eliminates 5× try-catch blocks)
+let stateManager, leadership, crossCheck, councilDecisions, requirementClarification;
+let DOMAIN_LABELS, DIMENSION_LABELS, CLARIFICATION_CONFIG, SIMILAR_PROJECT_CONFIG;
+
 try {
-  stateManager = require('./src/state-manager');
+  const { loadCoreModules } = require('./dist/utils/module-loader');
+  const modules = loadCoreModules('.');
+
+  stateManager = modules['state-manager'];
+  leadership = modules.leadership;
+  crossCheck = modules['cross-check'];
+  councilDecisions = modules['council-decisions'];
+  requirementClarification = modules['requirement-clarification'];
+
+  // Load constants
+  const constants = require('./dist/constants');
+  DOMAIN_LABELS = constants.DOMAIN_LABELS;
+  DIMENSION_LABELS = constants.DIMENSION_LABELS;
+  CLARIFICATION_CONFIG = constants.CLARIFICATION_CONFIG;
+  SIMILAR_PROJECT_CONFIG = constants.SIMILAR_PROJECT_CONFIG;
+
 } catch (error) {
-  try {
-    stateManager = require('./dist/state-manager');
-  } catch (e) {
-    console.warn('⚠️ State manager not available, using legacy file operations');
+  // Fallback: Use legacy imports if simplified loader not available
+  console.warn('⚠️  Using legacy module loading (module-loader not compiled yet)');
+
+  try { stateManager = require('./src/state-manager'); } catch (e) {
+    try { stateManager = require('./dist/state-manager'); } catch (e2) {
+      console.warn('⚠️ State manager not available');
+    }
   }
+
+  try { leadership = require('./src/leadership'); } catch (e) {
+    try { leadership = require('./dist/leadership'); } catch (e2) {
+      console.warn('⚠️  Leadership module not available');
+    }
+  }
+
+  try { crossCheck = require('./src/cross-check'); } catch (e) {
+    try { crossCheck = require('./dist/cross-check'); } catch (e2) {
+      console.warn('⚠️  Cross-check module not available');
+    }
+  }
+
+  try { councilDecisions = require('./src/council-decisions'); } catch (e) {
+    try { councilDecisions = require('./dist/council-decisions'); } catch (e2) {
+      console.warn('⚠️  Council decisions module not available');
+    }
+  }
+
+  try { requirementClarification = require('./src/requirement-clarification'); } catch (e) {
+    try { requirementClarification = require('./dist/requirement-clarification'); } catch (e2) {
+      console.warn('⚠️  Requirement clarification not available');
+    }
+  }
+
+  // Fallback constants
+  DOMAIN_LABELS = { planning: '规划权', execution: '执行权', quality: '质量权' };
+  DIMENSION_LABELS = {
+    scope: 'Scope',
+    technical: 'Technical',
+    deliverables: 'Deliverable',
+    constraints: 'Constraints',
+    context: 'Context'
+  };
+  CLARIFICATION_CONFIG = { MIN_ROUNDS: 2, SOFT_MAX_ROUNDS: 3, CONFIDENCE_THRESHOLD: 75, QUESTIONS_PER_ROUND: 5 };
+  SIMILAR_PROJECT_CONFIG = { CHECK_RECENT_COUNT: 10, MIN_KEYWORD_MATCHES: 3, MAX_RESULTS: 3 };
 }
 
-// Import leadership module
-let leadership;
-try {
-  leadership = require('./src/leadership');
-} catch (error) {
-  try {
-    leadership = require('./dist/leadership');
-  } catch (e) {
-    console.warn('⚠️  Leadership module not available, falling back to single-PM mode');
-  }
-}
-
-// Import cross-check module
-let crossCheck;
-try {
-  crossCheck = require('./src/cross-check');
-} catch (error) {
-  try {
-    crossCheck = require('./dist/cross-check');
-  } catch (e) {
-    console.warn('⚠️  Cross-check module not available');
-  }
-}
-
-// Import council decisions module
-let councilDecisions;
-try {
-  councilDecisions = require('./src/council-decisions');
-} catch (error) {
-  try {
-    councilDecisions = require('./dist/council-decisions');
-  } catch (e) {
-    console.warn('⚠️  Council decisions module not available');
-  }
-}
-
-// Import requirement clarification system
-let requirementClarification;
-try {
-  requirementClarification = require('./src/requirement-clarification');
-} catch (error) {
-  try {
-    requirementClarification = require('./dist/requirement-clarification');
-  } catch (e) {
-    console.warn('⚠️  Requirement clarification not available, skipping clarification phase');
-  }
-}
-
-// Dynamic project directory resolution (replaces hardcoded PROJECTS_DIR)
+// === DYNAMIC PROJECT DIRECTORY RESOLUTION ===
 function resolveProjectsDir(explicitDir) {
   if (stateManager && stateManager.resolveProjectsDir) {
     return stateManager.resolveProjectsDir(explicitDir);
@@ -82,31 +96,29 @@ function resolveProjectsDir(explicitDir) {
 
 const PROJECTS_DIR = resolveProjectsDir();
 
-// Domain label constants (三权分立)
-const DOMAIN_LABELS = { planning: '规划权', execution: '执行权', quality: '质量权' };
-
 /**
  * 检查是否存在相似项目
+ * Uses SIMILAR_PROJECT_CONFIG constant for thresholds
  */
 function checkSimilarProjects(userRequest) {
   if (!fs.existsSync(PROJECTS_DIR)) {
     return [];
   }
-  
+
   const projects = fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
-  
+
   const similar = [];
   const requestKeywords = userRequest.toLowerCase().split(/\s+/);
-  
-  for (const projId of projects.slice(-10)) { // 只检查最近10个
+
+  for (const projId of projects.slice(-SIMILAR_PROJECT_CONFIG.CHECK_RECENT_COUNT)) {
     const docPath = path.join(PROJECTS_DIR, projId, `${projId}.md`);
     if (fs.existsSync(docPath)) {
       try {
         const content = fs.readFileSync(docPath, 'utf-8').toLowerCase();
         const matchCount = requestKeywords.filter(kw => content.includes(kw)).length;
-        if (matchCount >= 3) {
+        if (matchCount >= SIMILAR_PROJECT_CONFIG.MIN_KEYWORD_MATCHES) {
           similar.push({ projectId: projId, matchScore: matchCount });
         }
       } catch (e) {
@@ -114,31 +126,34 @@ function checkSimilarProjects(userRequest) {
       }
     }
   }
-  
-  return similar.sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
+
+  return similar.sort((a, b) => b.matchScore - a.matchScore).slice(0, SIMILAR_PROJECT_CONFIG.MAX_RESULTS);
 }
 
 /**
- * 初始化项目，创建完整的项目结构
+ * Validate user request input
+ * @param {string} userRequest - User request to validate
+ * @throws {Error} if validation fails
  */
-async function initializeProject(userRequest, options = {}) {
+function validateUserRequest(userRequest) {
+  if (!userRequest || typeof userRequest !== 'string') {
+    throw new Error('用户请求不能为空');
+  }
+
+  if (userRequest.length > 5000) {
+    console.warn('⚠️ 用户请求过长，可能会影响处理效果');
+  }
+}
+
+/**
+ * Check and warn about similar projects
+ * @param {string} userRequest - User request to check
+ * @param {object} options - Options including forceCreate flag
+ * @returns {Array} Array of similar projects
+ */
+function checkAndWarnSimilarProjects(userRequest, options) {
   try {
-    // 参数验证
-    if (!userRequest || typeof userRequest !== 'string') {
-      throw new Error('用户请求不能为空');
-    }
-
-    if (userRequest.length > 5000) {
-      console.warn('⚠️ 用户请求过长，可能会影响处理效果');
-    }
-
-    // 检查相似项目
-    let similarProjects = [];
-    try {
-      similarProjects = checkSimilarProjects(userRequest);
-    } catch (e) {
-      console.warn('⚠️ 检查相似项目失败:', e.message);
-    }
+    const similarProjects = checkSimilarProjects(userRequest);
 
     if (similarProjects.length > 0 && !options.forceCreate) {
       console.log(`⚠️ 发现 ${similarProjects.length} 个相似项目:`);
@@ -146,140 +161,199 @@ async function initializeProject(userRequest, options = {}) {
       console.log(`提示: 如仍要创建新项目，设置 options.forceCreate = true`);
     }
 
-    const projectId = generateProjectId();
-    const projectDir = path.join(PROJECTS_DIR, projectId);
+    return similarProjects;
+  } catch (e) {
+    console.warn('⚠️ 检查相似项目失败:', e.message);
+    return [];
+  }
+}
 
-    console.log(`🚀 初始化项目: ${projectId}`);
+/**
+ * Handle requirement clarification result
+ * @param {string} userRequest - Original user request
+ * @param {object} options - Options including clarificationResult
+ * @returns {string} Enriched request or original if no clarification
+ */
+function handleClarificationResult(userRequest, options) {
+  const clarificationResult = options.clarificationResult || null;
 
-    // 1. 需求澄清阶段 (Requirement Clarification Phase)
-    // Note: This is a placeholder. Actual clarification should be done by the caller
-    // using conductRequirementClarification() before calling initializeProject()
-    let enrichedRequest = userRequest;
-    let clarificationResult = options.clarificationResult || null;
+  if (clarificationResult && clarificationResult.enrichedRequest) {
+    console.log(`✅ 使用已澄清的需求 (${clarificationResult.rounds} 轮, 置信度: ${clarificationResult.finalConfidence}/100)`);
+    return clarificationResult.enrichedRequest;
+  }
 
-    // If clarification result is provided, use the enriched request
-    if (clarificationResult && clarificationResult.enrichedRequest) {
-      enrichedRequest = clarificationResult.enrichedRequest;
-      console.log(`✅ 使用已澄清的需求 (${clarificationResult.rounds} 轮, 置信度: ${clarificationResult.finalConfidence}/100)`);
-    }
+  return userRequest;
+}
 
-    // 2. 技能感知分析
-    let skillPlanning;
+/**
+ * Perform skill-aware planning analysis
+ * @param {string} enrichedRequest - Request to analyze
+ * @returns {object} Skill planning result
+ * @throws {Error} if analysis fails
+ */
+function performSkillAnalysis(enrichedRequest) {
+  try {
+    return initializeSkillAwarePlanning(enrichedRequest);
+  } catch (e) {
+    console.error('❌ 技能感知分析失败:', e.message);
+    throw new Error(`无法分析技能需求: ${e.message}`);
+  }
+}
+
+/**
+ * Initialize project state using state manager or legacy method
+ * @param {string} projectId - Project ID
+ * @param {string} projectDir - Project directory path
+ * @param {string} userRequest - Original user request
+ * @param {string} enrichedRequest - Enriched request (after clarification)
+ * @param {object} skillPlanning - Skill planning result
+ * @param {object} options - Options including mode and clarificationResult
+ * @returns {Promise<Array>} Team suggestion
+ */
+async function initializeProjectState(projectId, projectDir, userRequest, enrichedRequest, skillPlanning, options) {
+  const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis, enrichedRequest);
+
+  if (stateManager && stateManager.createProject) {
     try {
-      skillPlanning = initializeSkillAwarePlanning(enrichedRequest);
+      await stateManager.createProject(projectId, {
+        id: projectId,
+        status: 'init',
+        mode: options.mode || 'FULL_AUTO',
+        userRequest: enrichedRequest,
+        originalRequest: userRequest,
+        clarificationData: options.clarificationResult ? {
+          rounds: options.clarificationResult.rounds,
+          finalConfidence: options.clarificationResult.finalConfidence,
+          insights: options.clarificationResult.insights
+        } : null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        team: teamSuggestion.map(role => ({
+          role: role.role,
+          agentId: `${role.role.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          status: 'active',
+          reworkCount: 0
+        })),
+        milestones: [],
+        disputes: [],
+        logs: [{
+          timestamp: new Date().toISOString(),
+          phase: 'init',
+          event: 'Project created',
+          details: `Mode: ${options.mode || 'FULL_AUTO'}, Skills: ${skillPlanning.analysis.recommendations.map(s => s.name).join(', ')}`
+        }]
+      }, PROJECTS_DIR);
+
+      console.log('✅ 使用统一状态管理器创建项目');
     } catch (e) {
-      console.error('❌ 技能感知分析失败:', e.message);
-      throw new Error(`无法分析技能需求: ${e.message}`);
-    }
-
-    // 3. 创建项目目录结构
-    try {
-      createProjectStructure(projectDir);
-    } catch (e) {
-      console.error('❌ 创建项目目录失败:', e.message);
-      throw new Error(`无法创建项目目录: ${e.message}`);
-    }
-
-    // 4. Use state manager to create project state
-    if (stateManager && stateManager.createProject) {
-      try {
-        const teamSuggestion = generateTeamSuggestion(skillPlanning.analysis, enrichedRequest);
-
-        await stateManager.createProject(projectId, {
-          id: projectId,
-          status: 'init',
-          mode: options.mode || 'FULL_AUTO',
-          userRequest: enrichedRequest, // Use enriched request
-          originalRequest: userRequest, // Keep original for reference
-          clarificationData: clarificationResult ? {
-            rounds: clarificationResult.rounds,
-            finalConfidence: clarificationResult.finalConfidence,
-            insights: clarificationResult.insights
-          } : null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          team: teamSuggestion.map(role => ({
-            role: role.role,
-            agentId: `${role.role.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-            status: 'active',
-            reworkCount: 0
-          })),
-          milestones: [],
-          disputes: [],
-          logs: [{
-            timestamp: new Date().toISOString(),
-            phase: 'init',
-            event: 'Project created',
-            details: `Mode: ${options.mode || 'FULL_AUTO'}, Skills: ${skillPlanning.analysis.recommendations.map(s => s.name).join(', ')}`
-          }]
-        }, PROJECTS_DIR);
-
-        console.log('✅ 使用统一状态管理器创建项目');
-      } catch (e) {
-        console.warn('⚠️ 状态管理器创建失败，使用传统方式:', e.message);
-        // Fallback to legacy
-        const projectDoc = generateProjectDocument(projectId, userRequest, skillPlanning, options);
-        fs.writeFileSync(path.join(projectDir, `${projectId}.md`), projectDoc);
-        await initializeAgentStatus(projectDir, projectId);
-      }
-    } else {
-      // Legacy fallback
+      console.warn('⚠️ 状态管理器创建失败，使用传统方式:', e.message);
+      // Fallback to legacy
       const projectDoc = generateProjectDocument(projectId, userRequest, skillPlanning, options);
       fs.writeFileSync(path.join(projectDir, `${projectId}.md`), projectDoc);
       await initializeAgentStatus(projectDir, projectId);
     }
+  } else {
+    // Legacy fallback
+    const projectDoc = generateProjectDocument(projectId, userRequest, skillPlanning, options);
+    fs.writeFileSync(path.join(projectDir, `${projectId}.md`), projectDoc);
+    await initializeAgentStatus(projectDir, projectId);
+  }
 
-    // 5. 生成团队组建建议
-    let teamSuggestion;
-    try {
-      teamSuggestion = generateTeamSuggestion(skillPlanning.analysis);
-    } catch (e) {
-      console.warn('⚠️ 生成团队建议失败:', e.message);
-      teamSuggestion = [];
+  return teamSuggestion;
+}
+
+/**
+ * Initialize whiteboard with error handling and fallback
+ * @param {string} projectDir - Project directory
+ * @param {string} projectId - Project ID
+ * @param {object} skillPlanning - Skill planning result
+ * @param {Array} teamSuggestion - Team suggestion
+ */
+function initializeWhiteboardWithFallback(projectDir, projectId, skillPlanning, teamSuggestion) {
+  try {
+    const { initializeWhiteboard } = require('./whiteboard');
+
+    const projectBrief = {
+      finalDeliverable: skillPlanning.analysis.finalDeliverable || '多部分协作成果',
+      roles: teamSuggestion.map(role => ({
+        name: role.role,
+        assignedSection: role.assignedSection || role.responsibility,
+        deliverable: role.responsibility
+      }))
+    };
+
+    initializeWhiteboard(projectDir, projectId, projectBrief);
+  } catch (e) {
+    console.warn('⚠️ 初始化白板失败:', e.message);
+    if (process.env.DEBUG) {
+      console.warn('   Stack:', e.stack);
     }
 
-    // 6. 初始化白板
+    // Fallback: initialize without projectBrief
     try {
       const { initializeWhiteboard } = require('./whiteboard');
-
-      // Create projectBrief for whiteboard
-      const projectBrief = {
-        finalDeliverable: skillPlanning.analysis.finalDeliverable || '多部分协作成果',
-        roles: teamSuggestion.map(role => ({
-          name: role.role,
-          assignedSection: role.assignedSection || role.responsibility,
-          deliverable: role.responsibility
-        }))
-      };
-
-      initializeWhiteboard(projectDir, projectId, projectBrief);
-    } catch (e) {
-      console.warn('⚠️ 初始化白板失败:', e.message);
-      if (process.env.DEBUG) {
-        console.warn('   Stack:', e.stack);
-      }
-      // Fallback: initialize without projectBrief
-      try {
-        const { initializeWhiteboard } = require('./whiteboard');
-        console.log('   尝试使用基础模式初始化白板...');
-        initializeWhiteboard(projectDir, projectId, null);
-        console.log('   ✅ 基础白板初始化成功');
-      } catch (fallbackError) {
-        console.error('❌ 白板初始化完全失败:', fallbackError.message);
-      }
+      console.log('   尝试使用基础模式初始化白板...');
+      initializeWhiteboard(projectDir, projectId, null);
+      console.log('   ✅ 基础白板初始化成功');
+    } catch (fallbackError) {
+      console.error('❌ 白板初始化完全失败:', fallbackError.message);
     }
+  }
+}
 
-    // 7. 初始化超时监控器（带崩溃恢复）
-    try {
-      const timeoutMonitor = require('./timeout-monitor');
-      timeoutMonitor.initializeMonitor(projectDir);
-      console.log('✅ 超时监控器已启动');
-    } catch (e) {
-      console.warn('⚠️ 初始化超时监控器失败:', e.message);
-    }
+/**
+ * Initialize timeout monitor with error handling
+ * @param {string} projectDir - Project directory
+ */
+function initializeTimeoutMonitor(projectDir) {
+  try {
+    const timeoutMonitor = require('./timeout-monitor');
+    timeoutMonitor.initializeMonitor(projectDir);
+    console.log('✅ 超时监控器已启动');
+  } catch (e) {
+    console.warn('⚠️ 初始化超时监控器失败:', e.message);
+  }
+}
 
+/**
+ * 初始化项目，创建完整的项目结构
+ * REFACTORED: Simplified from 171 lines to pipeline of focused functions
+ */
+async function initializeProject(userRequest, options = {}) {
+  try {
+    // 1. Validate input
+    validateUserRequest(userRequest);
+
+    // 2. Check similar projects
+    checkAndWarnSimilarProjects(userRequest, options);
+
+    // 3. Generate project ID and directory
+    const projectId = generateProjectId();
+    const projectDir = path.join(PROJECTS_DIR, projectId);
+    console.log(`🚀 初始化项目: ${projectId}`);
+
+    // 4. Handle requirement clarification
+    const enrichedRequest = handleClarificationResult(userRequest, options);
+
+    // 5. Perform skill analysis
+    const skillPlanning = performSkillAnalysis(enrichedRequest);
+
+    // 6. Create project directory structure
+    createProjectStructure(projectDir);
+
+    // 7. Initialize project state and generate team
+    const teamSuggestion = await initializeProjectState(
+      projectId, projectDir, userRequest, enrichedRequest, skillPlanning, options
+    );
+
+    // 8. Initialize whiteboard
+    initializeWhiteboardWithFallback(projectDir, projectId, skillPlanning, teamSuggestion);
+
+    // 9. Initialize timeout monitor
+    initializeTimeoutMonitor(projectDir);
+
+    // 10. Return result
     console.log(`✅ 项目初始化完成: ${projectDir}`);
-
     return {
       projectId,
       projectDir,
@@ -1918,8 +1992,8 @@ async function conductRequirementClarification(userRequest, askUserQuestionTool)
     console.log('💬 开始需求澄清流程...');
 
     const result = await requirementClarification.clarifyRequirements(userRequest, {
-      minRounds: 2,
-      maxRounds: 3,
+      minRounds: CLARIFICATION_CONFIG.MIN_ROUNDS,
+      maxRounds: CLARIFICATION_CONFIG.SOFT_MAX_ROUNDS,
       askUserQuestion: async (questions) => {
         // Format questions for AskUserQuestion tool
         const toolQuestions = questions.map((q, index) => ({
@@ -1964,16 +2038,10 @@ async function conductRequirementClarification(userRequest, askUserQuestionTool)
 
 /**
  * Get human-readable label for confidence dimension
+ * Uses DIMENSION_LABELS constant from src/constants.ts
  */
 function getDimensionLabel(dimension) {
-  const labels = {
-    scope: 'Scope',
-    technical: 'Technical',
-    deliverables: 'Deliverable',
-    constraints: 'Constraints',
-    context: 'Context'
-  };
-  return labels[dimension] || dimension;
+  return DIMENSION_LABELS[dimension] || dimension;
 }
 
 // ============================================================================
