@@ -23,18 +23,17 @@ class Executor:
         self.state_manager = StateManager(self.task_dir)
         self.progress_tracker: Optional[ProgressTracker] = None
         self._interrupted = False
-        
-        # 设置信号处理
-        signal.signal(signal.SIGTERM, self._handle_signal)
+
+        # 设置信号处理 (Windows does not support SIGTERM)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
-    
+
     def _handle_signal(self, signum, frame):
-        """处理中断信号"""
+        """处理中断信号 - 设置标志位而不是立即退出"""
         print(f"[Executor] 收到信号 {signum}，正在优雅退出...")
         self._interrupted = True
-        if self.progress_tracker:
-            self.progress_tracker.stop(success=False, error=f"Interrupted by signal {signum}")
-        sys.exit(1)
+        # Don't call sys.exit() - let the main loop handle cleanup
     
     def run(self, step_mode: bool = False) -> bool:
         """
@@ -59,7 +58,8 @@ class Executor:
         if not self._acquire_lock():
             print(f"[Executor] 任务 {self.task_id} 已在运行中")
             return False
-        
+
+        reporter = None  # Initialize to None to avoid UnboundLocalError in finally
         try:
             # 创建 reporter
             reporter = self._create_reporter(config)
@@ -86,70 +86,77 @@ class Executor:
             if step_mode:
                 current_state = self.state_manager.load()
                 current_step = current_state.get("current_step", 0)
-                
+
                 if current_step >= len(goals):
                     print(f"[Executor] 所有步骤已完成")
                     self.progress_tracker.stop(success=True)
                     self._release_lock(success=True)
                     return True
-                
+
                 goal = goals[current_step]
                 print(f"[Executor] 执行步骤 {current_step + 1}/{len(goals)}: {goal}")
-                
-                # 更新状态
-                self.state_manager.update(lambda s: {
-                    **s,
-                    "current_step": current_step + 1,
-                    "current_goal": goal if current_step + 1 < len(goals) else None,
-                })
-                
-                # 上报步骤完成
-                self.progress_tracker.on_step_complete(current_step + 1)
-                
-                # 执行当前步骤
+
+                # 执行当前步骤 (BEFORE updating state)
                 step_result = self._execute_goal(goal, config)
-                
+
                 if not step_result["success"]:
                     success = False
                     error_msg = step_result.get("error", "Unknown error")
-                
+                else:
+                    # Only update state AFTER successful execution
+                    self.state_manager.update(lambda s: {
+                        **s,
+                        "current_step": current_step + 1,
+                        "current_goal": goal,
+                        "progress_percent": ((current_step + 1) / len(goals)) * 100,
+                    })
+
+                    # 上报步骤完成
+                    self.progress_tracker.on_step_complete(current_step + 1)
+
                 # 检查是否完成
                 is_completed = success and (current_step + 1 >= len(goals))
-                
+
                 # 停止进度追踪
                 self.progress_tracker.stop(success=success, error=error_msg, is_completed=is_completed)
-                
+
                 # 释放锁
                 self._release_lock(success, error_msg, is_completed=is_completed)
-                
+
                 return success
             
             # 完整模式：执行所有步骤（向后兼容）
-            for i, goal in enumerate(goals):
+            # 从当前步骤继续（支持 resume）
+            current_state = self.state_manager.load()
+            start_step = current_state.get("current_step", 0)
+
+            for i in range(start_step, len(goals)):
                 if self._interrupted:
                     success = False
                     error_msg = "Interrupted"
                     break
-                
+
+                goal = goals[i]
                 print(f"[Executor] 执行步骤 {i+1}/{len(goals)}: {goal}")
-                
-                # 更新状态
-                self.state_manager.update(lambda s: {
-                    **s,
-                    "current_step": i + 1,
-                    "current_goal": goal,
-                })
-                
-                # 上报步骤完成
-                self.progress_tracker.on_step_complete(i + 1)
-                
-                # 执行步骤
+
+                # 执行步骤 (BEFORE updating state)
                 step_result = self._execute_goal(goal, config)
-                
+
                 if not step_result["success"]:
                     success = False
                     error_msg = step_result.get("error", "Unknown error")
                     break
+
+                # Only update state AFTER successful execution
+                self.state_manager.update(lambda s: {
+                    **s,
+                    "current_step": i + 1,
+                    "current_goal": goal,
+                    "progress_percent": ((i + 1) / len(goals)) * 100,
+                })
+
+                # 上报步骤完成
+                self.progress_tracker.on_step_complete(i + 1)
             
             # 停止进度追踪
             self.progress_tracker.stop(success=success, error=error_msg)
@@ -166,7 +173,8 @@ class Executor:
             self._release_lock(success=False, error=str(e))
             return False
         finally:
-            reporter.close()
+            if reporter:
+                reporter.close()
     
     def _execute_goal(self, goal: str, config: Dict) -> Dict[str, Any]:
         """
@@ -273,13 +281,16 @@ class Executor:
             retry_count = state.get("retry_count", 0)
             if not success:
                 retry_count += 1
-            
+
             # 确定最终状态
-            if is_completed is not None:
+            if self._interrupted:
+                # Interrupted tasks should be marked as paused, not failed
+                final_status = "paused"
+            elif is_completed is not None:
                 final_status = "completed" if success and is_completed else ("failed" if not success else "idle")
             else:
                 final_status = "completed" if success else "failed"
-            
+
             return {
                 **state,
                 "status": final_status,
@@ -289,7 +300,7 @@ class Executor:
                 "retry_count": retry_count,
                 "last_error": error,
             }
-        
+
         self.state_manager.update(release)
 
 

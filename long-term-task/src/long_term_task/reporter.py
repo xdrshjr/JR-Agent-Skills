@@ -60,8 +60,18 @@ class FileReporter(Reporter):
 
 class WebhookReporter(Reporter):
     """Webhook 上报器 - HTTP 回调，异步 + 指数退避重试"""
-    
+
     def __init__(self, url: str, max_retry: int = 3, retry_interval: float = 1.0):
+        # Defer requests import to allow use of package without requests installed
+        try:
+            import requests
+            self._requests = requests
+        except ImportError:
+            raise ImportError(
+                "requests library is required for WebhookReporter. "
+                "Install it with: pip install requests"
+            )
+
         self.url = url
         self.max_retry = max_retry
         self.retry_interval = retry_interval
@@ -97,9 +107,9 @@ class WebhookReporter(Reporter):
             "data": data,
             "timestamp": datetime.now().isoformat(),
         }
-        response = requests.post(
-            self.url, 
-            json=payload, 
+        response = self._requests.post(
+            self.url,
+            json=payload,
             timeout=5,
             headers={"Content-Type": "application/json"}
         )

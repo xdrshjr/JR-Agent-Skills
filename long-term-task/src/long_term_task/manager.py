@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from .task import Task
-from .state import StateManager
+from .state import StateManager, FileLock
 from .reporter import Reporter, FileReporter
 
 
@@ -181,7 +181,7 @@ class TaskManager:
             if not task_dir.name.startswith("task-"):
                 continue
             
-            task_id = task_dir.name.replace("task-", "")
+            task_id = task_dir.name[5:]  # Remove "task-" prefix
             task = Task(task_dir, task_id)
             
             if status is None or task.status == status:
@@ -220,24 +220,34 @@ class TaskManager:
         return True
     
     def pause_task(self, task_id: str) -> bool:
-        """暂停任务"""
+        """暂停任务 - 只能暂停正在运行或空闲的任务"""
         task = self.get_task(task_id)
         if not task:
             return False
-        
+
+        current_status = task.status
+        if current_status not in ("running", "idle"):
+            print(f"[TaskManager] 无法暂停状态为 {current_status} 的任务")
+            return False
+
         task.state_manager.update(lambda s: {
             **s,
             "status": "paused",
             "paused_at": datetime.now().isoformat(),
         })
         return True
-    
+
     def resume_task(self, task_id: str) -> bool:
-        """恢复任务"""
+        """恢复任务 - 只能恢复暂停的任务"""
         task = self.get_task(task_id)
         if not task:
             return False
-        
+
+        current_status = task.status
+        if current_status != "paused":
+            print(f"[TaskManager] 无法恢复状态为 {current_status} 的任务")
+            return False
+
         task.state_manager.update(lambda s: {
             **s,
             "status": "idle",
@@ -251,25 +261,28 @@ class TaskManager:
         return uuid.uuid4().hex[:8]
     
     def _update_index(self, task_id: str, name: Optional[str], action: str):
-        """更新任务索引"""
-        index = {}
-        if self.index_path.exists():
-            try:
-                with open(self.index_path, "r") as f:
-                    index = json.load(f)
-            except:
-                pass
-        
-        if action == "created":
-            index[task_id] = {
-                "name": name,
-                "created_at": datetime.now().isoformat(),
-                "status": "active",
-            }
-        elif action == "deleted":
-            if task_id in index:
-                index[task_id]["status"] = "deleted"
-                index[task_id]["deleted_at"] = datetime.now().isoformat()
-        
-        with open(self.index_path, "w") as f:
-            json.dump(index, f, indent=2)
+        """更新任务索引 - 使用文件锁防止并发修改"""
+        index_lock_path = self.work_dir / "index.lock"
+
+        with FileLock(index_lock_path):
+            index = {}
+            if self.index_path.exists():
+                try:
+                    with open(self.index_path, "r") as f:
+                        index = json.load(f)
+                except Exception:
+                    pass
+
+            if action == "created":
+                index[task_id] = {
+                    "name": name,
+                    "created_at": datetime.now().isoformat(),
+                    "status": "active",
+                }
+            elif action == "deleted":
+                if task_id in index:
+                    index[task_id]["status"] = "deleted"
+                    index[task_id]["deleted_at"] = datetime.now().isoformat()
+
+            with open(self.index_path, "w") as f:
+                json.dump(index, f, indent=2)

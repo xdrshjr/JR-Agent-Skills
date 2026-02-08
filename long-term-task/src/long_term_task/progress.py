@@ -93,10 +93,11 @@ class ProgressTracker:
             self._send_event("task_completed", {
                 "task_id": self.task_id,
                 "elapsed_seconds": elapsed,
-                "total_steps": self.current_step,
+                "total_steps": self.total_steps,
+                "completed_steps": self.current_step,
             })
         elif not success:
-            self._send_event("task_failed_final", {
+            self._send_event("task_failed", {
                 "task_id": self.task_id,
                 "elapsed_seconds": elapsed,
                 "error": error,
