@@ -2,7 +2,7 @@
   <img src="./logo.png" alt="JR-Agent-Skills Logo" width="180">
 </p>
 
-<h1 align="center">JR-Agent-Skills</h1>
+<h1 align="center">JR-OpenClaw-Skills</h1>
 
 <p align="center">
   <b>为 OpenClaw 精心打造的模块化 AI Agent 技能集合</b>
@@ -27,7 +27,7 @@
 
 ## 📖 项目简介
 
-**JR-Agent-Skills** 是一套专为 [OpenClaw](https://github.com/openclaw/openclaw) AI Agent 设计的即用型技能模块集合。每个技能都是独立的功能单元，可以无缝集成到您的 Agent 工作流中。
+**JR-OpenClaw-Skills** 是一套专为 [OpenClaw](https://github.com/openclaw/openclaw) AI Agent 设计的即用型技能模块集合。每个技能都是独立的功能单元，可以无缝集成到您的 Agent 工作流中。
 
 无论您需要网页自动化、媒体生成、文档处理还是多智能体协作 —— 这里都有您需要的工具。
 
@@ -100,8 +100,8 @@
 
 1. 克隆本仓库：
 ```bash
-git clone https://github.com/xdrshjr/JR-Agent-Skills.git
-cd JR-Agent-Skills
+git clone https://github.com/xdrshjr/JR-OpenClaw-Skills.git
+cd JR-OpenClaw-Skills
 ```
 
 2. 进入任意技能目录：
@@ -122,7 +122,7 @@ python3 scripts/tts.py "你好，世界！" -v zh_female_cancan_mars_bigtts -o o
 ## 📁 项目结构
 
 ```
-JR-Agent-Skills/
+JR-OpenClaw-Skills/
 ├── 📄 README.md                    # 英文版文档
 ├── 📄 README_CN.md                 # 本文件（中文版）
 ├── 🖼️  logo.png                    # 项目 Logo

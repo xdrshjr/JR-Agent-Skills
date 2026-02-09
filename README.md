@@ -2,7 +2,7 @@
   <img src="./logo.png" alt="JR-Agent-Skills Logo" width="180">
 </p>
 
-<h1 align="center">JR-Agent-Skills</h1>
+<h1 align="center">JR-OpenClaw-Skills</h1>
 
 <p align="center">
   <b>A curated collection of modular AI Agent skills for OpenClaw</b>
@@ -27,7 +27,7 @@
 
 ## 📖 Overview
 
-**JR-Agent-Skills** is a comprehensive collection of ready-to-use skill modules designed for AI Agents running on [OpenClaw](https://github.com/openclaw/openclaw). Each skill is a self-contained functional unit that can be seamlessly integrated into your agent workflow.
+**JR-OpenClaw-Skills** is a comprehensive collection of ready-to-use skill modules designed for AI Agents running on [OpenClaw](https://github.com/openclaw/openclaw). Each skill is a self-contained functional unit that can be seamlessly integrated into your agent workflow.
 
 Whether you need web automation, media generation, document processing, or multi-agent coordination — we've got you covered.
 
@@ -100,8 +100,8 @@ Whether you need web automation, media generation, document processing, or multi
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/xdrshjr/JR-Agent-Skills.git
-cd JR-Agent-Skills
+git clone https://github.com/xdrshjr/JR-OpenClaw-Skills.git
+cd JR-OpenClaw-Skills
 ```
 
 2. Navigate to any skill directory:
@@ -122,7 +122,7 @@ python3 scripts/tts.py "Hello, World!" -v zh_female_cancan_mars_bigtts -o output
 ## 📁 Project Structure
 
 ```
-JR-Agent-Skills/
+JR-OpenClaw-Skills/
 ├── 📄 README.md                    # This file (English)
 ├── 📄 README_CN.md                 # Chinese version
 ├── 🖼️  logo.png                    # Project logo
