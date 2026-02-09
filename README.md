@@ -12,7 +12,7 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   </a>
-  <img src="https://img.shields.io/badge/Skills-19-brightgreen.svg" alt="19 Skills">
+  <img src="https://img.shields.io/badge/Skills-18-brightgreen.svg" alt="18 Skills">
   <img src="https://img.shields.io/badge/Platform-OpenClaw-orange.svg" alt="Platform: OpenClaw">
 </p>
 
@@ -29,7 +29,7 @@
 
 **JR-OpenClaw-Skills** is a comprehensive collection of ready-to-use skill modules designed for AI Agents running on [OpenClaw](https://github.com/openclaw/openclaw). Each skill is a self-contained functional unit that can be seamlessly integrated into your agent workflow.
 
-Whether you need web automation, media generation, document processing, or multi-agent coordination — we've got you covered.
+Whether you need web automation, media generation, document processing, or agent utilities — we've got you covered.
 
 ## ✨ Features
 
@@ -79,7 +79,6 @@ Whether you need web automation, media generation, document processing, or multi
 ### 🤖 Agent Utilities
 | Skill | Description | Path |
 |:------|:------------|:-----|
-| **multi-agent-team** | Multi-agent team collaboration with dynamic roles (3 executors + 1 QA) | [`multi-agent-team/`](./multi-agent-team/) |
 | **long-term-task** | Long-term task management with multi-round dialogue and dual-heartbeat monitoring | [`long-term-task/`](./long-term-task/) |
 | **session-cleaner** | Clean up and manage OpenClaw sessions, kill sub-agents and reset context | [`session-cleaner/`](./session-cleaner/) |
 | **auto-updater** | Automatically update Clawdbot and installed skills daily with change summaries | [`auto-updater/`](./auto-updater/) |
@@ -136,7 +135,6 @@ JR-OpenClaw-Skills/
 ├── 📄 hf-papers-reporter/          # HF papers to Word
 ├── 🎬 hf-papers-to-video/          # HF papers to video
 ├── 📋 long-term-task/              # Long-term task management
-├── 👥 multi-agent-team/            # Multi-agent team coordination
 ├── 🎨 nano-banana-pro/             # Gemini image generation
 ├── 📰 paper-daily/                 # Paper tracking
 ├── 🎬 remotion/                    # Remotion utilities

@@ -12,7 +12,7 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   </a>
-  <img src="https://img.shields.io/badge/Skills-19-brightgreen.svg" alt="19 个技能">
+  <img src="https://img.shields.io/badge/Skills-18-brightgreen.svg" alt="18 个技能">
   <img src="https://img.shields.io/badge/Platform-OpenClaw-orange.svg" alt="平台: OpenClaw">
 </p>
 
@@ -79,7 +79,6 @@
 ### 🤖 Agent 工具
 | 技能 | 功能描述 | 路径 |
 |:------|:---------|:-----|
-| **multi-agent-team** | 多智能体团队协作，支持动态角色（3 个执行者 + 1 个 QA） | [`multi-agent-team/`](./multi-agent-team/) |
 | **long-term-task** | 长期任务管理，支持多轮对话和双心跳监控 | [`long-term-task/`](./long-term-task/) |
 | **session-cleaner** | 清理和管理 OpenClaw 会话，关闭子 Agent 并重置上下文 | [`session-cleaner/`](./session-cleaner/) |
 | **auto-updater** | 自动每日更新 Clawdbot 和已安装技能，附带变更摘要 | [`auto-updater/`](./auto-updater/) |
@@ -136,7 +135,6 @@ JR-OpenClaw-Skills/
 ├── 📄 hf-papers-reporter/          # HF 论文转 Word
 ├── 🎬 hf-papers-to-video/          # HF 论文转视频
 ├── 📋 long-term-task/              # 长期任务管理
-├── 👥 multi-agent-team/            # 多智能体团队协调
 ├── 🎨 nano-banana-pro/             # Gemini 图像生成
 ├── 📰 paper-daily/                 # 论文追踪
 ├── 🎬 remotion/                    # Remotion 工具
