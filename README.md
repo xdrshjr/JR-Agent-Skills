@@ -12,7 +12,7 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   </a>
-  <img src="https://img.shields.io/badge/Skills-18-brightgreen.svg" alt="18 Skills">
+  <img src="https://img.shields.io/badge/Skills-19-brightgreen.svg" alt="19 Skills">
   <img src="https://img.shields.io/badge/Platform-OpenClaw-orange.svg" alt="Platform: OpenClaw">
 </p>
 
@@ -87,6 +87,7 @@ Whether you need web automation, media generation, document processing, or agent
 | Skill | Description | Path |
 |:------|:------------|:-----|
 | **github-commit-push** | Complete git commit and push workflow with remote configuration and conflict handling | [`github-commit-push/`](./github-commit-push/) |
+| **claude-code-wrapper** | Simplified Claude Code CLI wrapper with automatic environment variable loading | [`claude-code-wrapper/`](./claude-code-wrapper/) |
 
 ## 🚀 Quick Start
 
@@ -131,6 +132,7 @@ JR-OpenClaw-Skills/
 ├── 🎙️  doubao-open-tts/             # Doubao TTS
 ├── 📊 excalidraw-flowchart/        # Flowchart creation
 ├── 🔧 github-commit-push/          # Git workflow
+├── 🤖 claude-code-wrapper/         # Claude Code wrapper with auto env loading
 ├── 🖼️  google-images-crawler/       # Image crawling
 ├── 📄 hf-papers-reporter/          # HF papers to Word
 ├── 🎬 hf-papers-to-video/          # HF papers to video

@@ -12,7 +12,7 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   </a>
-  <img src="https://img.shields.io/badge/Skills-18-brightgreen.svg" alt="18 个技能">
+  <img src="https://img.shields.io/badge/Skills-19-brightgreen.svg" alt="19 个技能">
   <img src="https://img.shields.io/badge/Platform-OpenClaw-orange.svg" alt="平台: OpenClaw">
 </p>
 
@@ -87,6 +87,7 @@
 | 技能 | 功能描述 | 路径 |
 |:------|:---------|:-----|
 | **github-commit-push** | 完整的 Git 提交和推送工作流，支持远程配置和冲突处理 | [`github-commit-push/`](./github-commit-push/) |
+| **claude-code-wrapper** | 简化的 Claude Code CLI 包装器，自动加载环境变量 | [`claude-code-wrapper/`](./claude-code-wrapper/) |
 
 ## 🚀 快速开始
 
@@ -131,6 +132,7 @@ JR-OpenClaw-Skills/
 ├── 🎙️  doubao-open-tts/             # 豆包 TTS
 ├── 📊 excalidraw-flowchart/        # 流程图创建
 ├── 🔧 github-commit-push/          # Git 工作流
+├── 🤖 claude-code-wrapper/         # Claude Code 包装器，自动加载环境变量
 ├── 🖼️  google-images-crawler/       # 图片爬取
 ├── 📄 hf-papers-reporter/          # HF 论文转 Word
 ├── 🎬 hf-papers-to-video/          # HF 论文转视频
